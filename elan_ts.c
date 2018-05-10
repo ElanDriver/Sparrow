@@ -371,9 +371,9 @@ int elan_read_fw_from_sdcard(char *file_path)
 			"[elan] user bin data len=%d\n", file_len);
 
 	file_fw_data_out = kzalloc(file_len, GFP_KERNEL);
-	if (file_fw_data == NULL) {
+	if (file_fw_data_out == NULL) {
 		dev_err(&private_ts->client->dev,
-				"[elan error] mallco file_fw_data error\n");
+				"[elan error] mallco file_fw_data_out error\n");
 		ret = -3;
 		goto out_read_fw_from_user1;
 	}
@@ -785,8 +785,8 @@ static int FW_Update(struct i2c_client *client, int source)
 		}
 		fw_data = file_fw_data_out;
 	} else {
-		PageNum = sizeof(file_fw_data)/132;
-		fw_data = file_fw_data;
+		PageNum = sizeof(file_fw_data_out)/132;
+		fw_data = file_fw_data_out;
 	}
 
 	elan_switch_irq(0);
@@ -973,8 +973,8 @@ static int FW_Update(struct i2c_client *client, int source)
 
 		fw_data = file_fw_data_out;
 	} else {
-		PageNum = sizeof(file_fw_data) / 132;
-		fw_data = file_fw_data;
+		PageNum = sizeof(file_fw_data_out) / 132;
+		fw_data = file_fw_data_out;
 	}
 
 IAP_RESTART:
@@ -1062,9 +1062,10 @@ PAGE_REWRITE:
 			}
 		} else {
 			rewriteCnt = 0;
-			dev_dbg(&client->dev,
-					"[elan]---%d--- page flash ok\n",
-					iPage);
+			if ((PageNum%PAGERETRY) == 0)
+				dev_dbg(&client->dev,
+						"[elan]---%d--- page flash ok\n",
+						iPage);
 		}
 		mdelay(10);
 	} /*end of for(iPage = 1; iPage <= PageNum; iPage++)*/
@@ -1245,7 +1246,6 @@ static ssize_t elan_iap_write(struct file *filp, const char *buff,
 	char *tmp;
 	struct i2c_client *client = private_ts->client;
 
-	dev_info(&client->dev, "%s enter", __func__);
 	if (count > 8192)
 		count = 8192;
 
@@ -1274,7 +1274,6 @@ ssize_t elan_iap_read(struct file *filp, char *buff, size_t count, loff_t *offp)
 	long rc;
 	struct i2c_client *client = private_ts->client;
 
-	dev_info(&client->dev, "%s enter", __func__);
 
 	if (count > 8192)
 		count = 8192;

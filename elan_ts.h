@@ -172,10 +172,10 @@ static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 
 #if defined IAP_PORTION || defined ELAN_RAM_XX
 	/*The newest firmware, if update must be changed here*/
-	static uint8_t file_fw_data[] = {
+/*	static uint8_t file_fw_data[] = {
 		#include "fw_data.i"
 	};
-#else
+*/
 	static uint8_t *file_fw_data_out;
 #endif
 	enum {
