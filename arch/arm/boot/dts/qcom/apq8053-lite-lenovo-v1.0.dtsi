@@ -32,15 +32,6 @@
 		//himax,rst-gpio = <&tlmm 64 0x0>;
 		report_type = <1>;
 	};
-        elan_ktf@10 {
-                compatible = "elan,ektf";
-                reg = <0x10>;
-                vdd-supply = <&pm8953_l10>;
-                vcc_i2c-supply = <&pm8953_l6>;
-                elan,reset-gpio = <&tlmm 64 0x00>;
-                elan,irq-gpio = <&tlmm 65 0x2008>;
-                interrupts = <65 0x2>;
-        };
 };
 
 &mdss_dsi {
@@ -85,7 +76,7 @@
 };
 
 &camera0 {
-	qcom,mount-angle = <90>;
+	qcom,mount-angle = <270>;
 };
 
 &camera1 {
