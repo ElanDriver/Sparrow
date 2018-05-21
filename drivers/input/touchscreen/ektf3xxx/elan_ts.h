@@ -7,7 +7,7 @@
 
 /****************************elan data info****************************/
 
-//i2c info
+/*i2c info*/
 #define ELAN_TS_NAME "elan_ts"
 
 #define ELAN_7BITS_ADDR 0x10
@@ -15,12 +15,12 @@
 
 #define IAPRESTART 5
 
-//sleep  mode
+/*sleep  mode*/
 #define PWR_STATE_DEEP_SLEEP	0
 #define PWR_STATE_NORMAL		1
 #define PWR_STATE_MASK		BIT(3)
 
-//cmd or paket head
+/*cmd or paket head*/
 #define CMD_S_PKT			0x52
 #define CMD_R_PKT			0x53
 #define CMD_W_PKT			0x54
@@ -28,64 +28,64 @@
 #define RAM_PKT				0xcc
 #define BUFF_PKT			0x63
 
-//elan IC series(only choose one)
-//#define ELAN_2K_XX
+/*elan IC series(only choose one)*/
+/*#define ELAN_2K_XX*/
 #define ELAN_3K_XX
-//#define ELAN_RAM_XX
+/*#define ELAN_RAM_XX*/
 
 /**********************fingers number macro switch**********************/
-//#define TWO_FINGERS
-//#define FIVE_FINGERS
+/*#define TWO_FINGERS*/
+/*#define FIVE_FINGERS*/
 #define TEN_FINGERS
-//#define ELAN_HID_IIC
-//#define ELAN_HID_PEN
+/*#define ELAN_HID_IIC*/
+/*#define ELAN_HID_PEN*/
 
-//#define ELAN_BUFFER_MODE
-//#define ELAN_ICS_SLOT_REPORT
+/*#define ELAN_BUFFER_MODE*/
+/*#define ELAN_ICS_SLOT_REPORT*/
 
 
 #ifdef ELAN_HID_PEN
-	#define  PEN_PKT                0x0D//0x0A or 0x
+	#define  PEN_PKT			0x0D
 #endif
 
 #ifdef TWO_FINGERS
-	#define FINGERS_PKT				0x5A
-	#define PACKET_SIZE				8
-	#define FINGERS_NUM				2
+	#define FINGERS_PKT			0x5A
+	#define PACKET_SIZE			8
+	#define FINGERS_NUM			2
 #endif
 
 #ifdef FIVE_FINGERS
-	#define FINGERS_PKT				0x5D
-	#define PACKET_SIZE				18
-	#define FINGERS_NUM				5
+	#define FINGERS_PKT			0x5D
+	#define PACKET_SIZE			18
+	#define FINGERS_NUM			5
 #endif
 
 #ifdef TEN_FINGERS
- 	#ifdef ELAN_HID_IIC     	  
-		#define PACKET_SIZE				67
-        #define FINGERS_PKT				0x3F //0x3F for normal packet 
+	#ifdef ELAN_HID_IIC
+		#define PACKET_SIZE		67
+		#define FINGERS_PKT		0x3F
 	#else
-    	#define FINGERS_PKT				0x62
-    #ifdef ELAN_BUFFER_MODE
-      	#define PACKET_SIZE				55
+		#define FINGERS_PKT		0x62
+	#ifdef ELAN_BUFFER_MODE
+		#define PACKET_SIZE		55
 	#else
-	    #define PACKET_SIZE				35
-	#endif	
+		#define PACKET_SIZE		35
 	#endif
-	
-	#define FINGERS_NUM				10
+	#endif
+
+	#define FINGERS_NUM			10
 #endif
 
 /***********************debug info macro switch***********************/
 #define PRINT_INT_INFO
-//#define PRINT_INT_INFO1 
+/*#define PRINT_INT_INFO1*/
 
-#ifdef PRINT_INT_INFO1 
+#ifdef PRINT_INT_INFO1
 	static bool debug_flage = true;
-	#define elan_info(fmt, args...) do{\
-		if(debug_flage)\
-                printk("[elan debug]:"fmt"\n", ##args);\
-	}while(0);
+	#define elan_info(fmt, args...) do {\
+		if (debug_flage) \
+			printk(KERN_INFO "[elan debug]:"fmt"\n", ##args);\
+	} while (0);
 #else
 	#define elan_info(fmt, args...)
 #endif
@@ -94,7 +94,7 @@
 /*************************have button macro switch*********************/
 static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 
-//#define TPD_HAVE_BUTTON
+/*#define TPD_HAVE_BUTTON*/
 #ifdef TPD_HAVE_BUTTON
 	static const int virtual_button[][2] = {
 			{20,   80},
@@ -115,13 +115,14 @@ static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 
 #define TPD_HAVE_KEY
 #ifdef TPD_HAVE_KEY
+#define TWO_LAYER
 
-//#ifdef TWO_LAYER
+#ifdef TWO_LAYER
 	#define ELAN_KEY_NONE 0x01
 	#define ELAN_KEY_BACK 0x21
 	#define ELAN_KEY_HOME 0x41
 	#define ELAN_KEY_MENU 0x81
-//#endif
+#endif
 
 #ifdef ONE_LAYER
 	#define FLAG_MENU	0x04
@@ -136,7 +137,7 @@ static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 #define ELAN_IAP_DEV
 
 #ifdef ELAN_IAP_DEV
-// For Firmware Update ****
+/*For Firmware Update *****/
 #define ELAN_IOCTLID	0xD0
 #define IOCTL_I2C_SLAVE	_IOW(ELAN_IOCTLID,  1, int)
 #define IOCTL_MAJOR_FW_VER  _IOR(ELAN_IOCTLID, 2, int)
@@ -157,7 +158,7 @@ static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 #define IOCTL_FW_UPDATE  _IOR(ELAN_IOCTLID, 17, int)
 #define IOCTL_BC_VER  _IOR(ELAN_IOCTLID, 18, int)
 #define IOCTL_2WIREICE  _IOR(ELAN_IOCTLID, 19, int)
-#define IOCTL_VIAROM	_IOR(ELAN_IOCTLID, 20, int) 
+#define IOCTL_VIAROM	_IOR(ELAN_IOCTLID, 20, int)
 #define IOCTL_VIAROM_CHECKSUM	_IOW(ELAN_IOCTLID, 21, unsigned long)
 
 #define IOCTL_GET_UPDATE_PROGREE	_IOR(CUSTOMER_IOCTLID,  2, int)
@@ -167,27 +168,26 @@ static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 
 /**********************update firmware macro switch*******************/
 
-//#define IAP_PORTION
+#define IAP_PORTION
 
 #if defined IAP_PORTION || defined ELAN_RAM_XX
 	/*The newest firmware, if update must be changed here*/
-	static uint8_t file_fw_data[] = {
+/*	static uint8_t file_fw_data[] = {
 		#include "fw_data.i"
 	};
-#else
-	static uint8_t *file_fw_data;
+*/
+	static uint8_t *file_fw_data_out;
 #endif
-	enum
-	{
+	enum {
 		PageSize = 132,
 		ACK_Fail = 0x00,
 		ACK_OK = 0xAA,
-		ACK_REWRITE= 0x55,
+		ACK_REWRITE = 0x55,
 		E_FD = -1,
 	};
 
 /**********************elan attr file macro switch*******************/
-//#define SYS_ATTR_FILE
+/*#define SYS_ATTR_FILE*/
 #ifdef SYS_ATTR_FILE
 	static struct kobject *android_touch_kobj;
 #endif
