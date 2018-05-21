@@ -2443,7 +2443,7 @@ static void elan_ic_init_work(struct work_struct *work)
 	} else {
 		dev_info(&private_ts->client->dev,
 				"[elan] run here +++++++++++++++\n");
-		dev_info(&private_ts->client->dev,
+		dev_info(*private_ts->client->dev,
 				"[elan] auto update fw in recovery mode");
 	}
 #if defined IAP_PORTION
