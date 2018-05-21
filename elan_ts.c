@@ -451,7 +451,7 @@ int GetAckData(struct i2c_client *client)
 		return ACK_REWRITE;
 	else
 		return ACK_Fail;
-#endif
+#endif		
 
 	return 0;
 }
@@ -924,10 +924,10 @@ static int FW_Update(struct i2c_client *client, int source)
 	int retry_cnt;
 	char fw_local_path[50];
 	char *fw_name;
-	int NEW_FW_VERSION = 0;
+  int NEW_FW_VERSION = 0;
 	int New_FW_ID = 0;
 	int byte_count;
-
+	
 	if (source == 1) {
 		fw_name = kasprintf(GFP_KERNEL, "elants_i2c.bin");
 		if (fw_name == NULL)
@@ -944,18 +944,18 @@ static int FW_Update(struct i2c_client *client, int source)
 		fw_data = (u8 *) p_fw_entry->data;
 		fw_size = p_fw_entry->size;
 		PageNum = fw_size/132;
-		if (ts->recover != 0x80) {
-			New_FW_ID  = fw_data[0xE2CF]<<8  | fw_data[0xE2CE];
-			NEW_FW_VERSION = fw_data[0xDEC3]<<8  | fw_data[0xDEC2];
-			dev_err(&ts->client->dev, "[elan] FW_ID=0x%x, New_FW_ID=0x%x\n",
-					ts->fw_id, New_FW_ID);
-			dev_err(&ts->client->dev, "[elan] FW_VERSION=0x%x,New_FW_VER=0x%x\n",
-					ts->fw_ver, NEW_FW_VERSION);
+		if(ts->recover != 0x80){
+		New_FW_ID  = fw_data[0xE2CF]<<8  | fw_data[0xE2CE];
+		NEW_FW_VERSION = fw_data[0xDEC3]<<8  | fw_data[0xDEC2];
+		dev_err(&ts->client->dev, "[elan] FW_ID=0x%x, New_FW_ID=0x%x\n",
+				ts->fw_id, New_FW_ID);
+		dev_err(&ts->client->dev, "[elan] FW_VERSION=0x%x,New_FW_VER=0x%x\n",
+				ts->fw_ver, NEW_FW_VERSION);
 			if ((ts->fw_ver&0xff) >= (NEW_FW_VERSION&0xff)) {
 				dev_dbg(&ts->client->dev, "[elan] fw version is newest!!\n");
 				goto no_update_elan_fw;
 			}
-		} else
+		} else 
 			dev_err(&ts->client->dev, "[elan] enter recovery mode");
 	} else if (source == 2) {
 		fw_data = NULL;
@@ -1003,25 +1003,28 @@ IAP_RESTART:
 	for (iPage = 1; iPage <= PageNum; iPage++) {
 #if 1
 PAGE_REWRITE:
-		/*write every page*/
-		for	(byte_count = 1; byte_count <= 5; byte_count++) {
-			if (byte_count != 5) {
-				szBuff = fw_data + curIndex;
-				curIndex =  curIndex + 32;
-				res = WritePage(client, szBuff, 32, iPage);
-			} else {
-				szBuff = fw_data + curIndex;
-				curIndex =  curIndex + 4;
-				res = WritePage(client, szBuff, 4, iPage);
-			}
-		}
-#else
+        //write every page
+        for(byte_count=1;byte_count<=5;byte_count++)
+        {
+            if(byte_count!=5)
+            {
+                szBuff = fw_data + curIndex;
+                curIndex =  curIndex + 32;
+                res = WritePage(client,szBuff, 32,iPage);
+            }
+            else{
+                szBuff = fw_data + curIndex;
+                curIndex =  curIndex + 4;
+                res = WritePage(client,szBuff, 4,iPage);
+            }
+        } // end of for(byte_count=1;byte_count<=17;byte_count++)
+#else        
 		szBuff = fw_data + curIndex;
 		curIndex =  curIndex + PageSize;
 
 PAGE_REWRITE:
 		res = WritePage(client, szBuff, PageSize, iPage);
-#endif
+#endif		
 		if (iPage == PageNum || iPage == 1)
 			mdelay(600);
 		else
@@ -1185,9 +1188,7 @@ static ssize_t show_fw_info(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct elan_ts_data *ts = private_ts;
-	return sprintf(buf,
-			"FW VER = 0x%x, FW ID = 0x%x, BC VER = 0x%x\n",
-			ts->fw_ver, ts->fw_id, ts->fw_bcd);
+	return sprintf(buf, "FW VER = 0x%x, FW ID = 0x%x, BC VER = 0x%x\n", ts->fw_ver, ts->fw_id, ts->fw_bcd);
 }
 static ssize_t store_fw_info(struct device *dev,
 		struct device_attribute *attr,
@@ -1525,9 +1526,7 @@ static int __fw_packet_handler(struct i2c_client *client)
 		ts->x_trace = buf_recv[6] + buf_recv[10];
 		ts->y_trace = buf_recv[7] + buf_recv[11];
 	}
-	dev_dbg(&ts->client->dev,
-			"[elan] %s: x= %d, y=%d\n",
-			__func__, ts->x_trace, ts->y_trace);
+	dev_dbg(&ts->client->dev, "[elan] %s: x= %d, y=%d\n", __func__, ts->x_trace,ts->y_trace);
 	ts->x_resolution = (ts->x_trace - 1) * ts->hand_osr;
 	ts->y_resolution = (ts->y_trace - 1) * ts->hand_osr;
 
@@ -1788,8 +1787,7 @@ static void check_update_flage(struct elan_ts_data *ts)
 			ts->fw_ver, NEW_FW_VERSION);
 
 	if ((ts->fw_id&0xff) != (New_FW_ID&0xff)) {
-		dev_info(&ts->client->dev,
-			"[elan] ***fw id is different,can not update !***\n");
+		printk(KERN_INFO "[elan] ***fw id is different,can not update !***\n");
 		goto no_update_elan_fw;
 	} else
 		printk(KERN_INFO "[elan] fw id is same !\n");
@@ -2140,7 +2138,7 @@ static int elan_ts_recv_data(struct elan_ts_data *ts, uint8_t *buf)
 	if (FINGERS_PKT != buf[2]
 #else
 	if (FINGERS_PKT != buf[0]
-#endif
+#endif	
 #ifdef ELAN_HID_PEN
 			&& PEN_PKT != buf[2]
 #endif
@@ -2428,8 +2426,7 @@ static void elan_ic_init_work(struct work_struct *work)
 	int retry_cnt = 0;
 
 	if (private_ts->recover == 0x00) {
-		dev_info(&private_ts->client->dev,
-				"[elan] normal +++++");
+		printk("[elan] normal +++++");
 		for (retry_cnt = 0; retry_cnt < 3; retry_cnt++) {
 			rc = __fw_packet_handler(private_ts->client);
 			if (rc < 0)
@@ -2442,10 +2439,8 @@ static void elan_ic_init_work(struct work_struct *work)
 		if (retry_cnt >= 3)
 			return;
 	} else {
-		dev_info(&private_ts->client->dev,
-				"[elan] run here +++++++++++++++\n");
-		dev_info(*private_ts->client->dev,
-				"[elan] auto update fw in recovery mode");
+		printk("[elan] run here +++++++++++++++\n");
+		printk("[elan] auto update fw in recovery mode");
 	}
 #if defined IAP_PORTION
 	check_update_flage(private_ts);
@@ -2769,22 +2764,20 @@ static int elan_ts_probe(struct i2c_client *client,
 			ts->pdata->rst_gpio, ts->pdata->intr_gpio);
 #endif
 
-	dev_err(&client->dev, "[elan] power setting....\n");
-	err = elan_ts_power_init(ts, true);
-	if (err) {
-		dev_err(&client->dev, "power init failed");
-		err = -EINVAL;
-		goto err_alloc_data_failed;
-	}
-
-	err = elan_ts_power_on(ts, true);
-	if	(err) {
-		dev_err(&client->dev, "power on failed");
-		goto pwr_deinit;
-	}
-
-	private_ts = ts;
-	/*init gpio setring rst output / int input */
+    dev_err(&client->dev, "[elan] power setting....\n");
+    err = elan_ts_power_init(ts, true);
+    if (err) {
+	dev_err(&client->dev, "power init failed");
+	err = -EINVAL;
+	goto err_alloc_data_failed;
+    }
+    err = elan_ts_power_on(ts, true);
+    if (err) {
+        dev_err(&client->dev, "power on failed");
+	    goto pwr_deinit;
+    }
+   private_ts = ts;
+   /*init gpio setring rst output / int input */
 	err = elan_gpio_init(client, pdata);
 	if (err < 0) {
 		dev_err(&client->dev, "init fail check forward step");
@@ -2794,9 +2787,7 @@ static int elan_ts_probe(struct i2c_client *client,
    /*reset & get hello pakect may need recv calibrate packect */
 	err = elan_ts_setup(client);
 	if (err < 0) {
-		dev_err(&client->dev,
-				"[elan] No Elan chip inside err = %d\n",
-				err);
+		dev_err(&client->dev, "[elan] No Elan chip inside err = %d\n",err);
 		err =  -EINVAL;
 		goto err_no_elan_chip;
 	}
@@ -2822,10 +2813,10 @@ static int elan_ts_probe(struct i2c_client *client,
 	}
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-	ts->early_suspend.suspend = elan_ts_early_suspend;
-	ts->early_suspend.resume = elan_ts_late_resume;
-	register_early_suspend(&ts->early_suspend);
+    ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+    ts->early_suspend.suspend = elan_ts_early_suspend;
+    ts->early_suspend.resume = elan_ts_late_resume;
+    register_early_suspend(&ts->early_suspend);
 #endif
 
 	return 0;
@@ -2839,7 +2830,7 @@ err_no_elan_chip:
 err_gpio_init_failed:
 pwr_deinit:
 	elan_ts_power_init(ts, false);
-#ifdef CONFIG_OF
+#ifdef CONFIG_OF	
 err_parse_dt_failed:
 	/*devm_kfree(pdata);*/
 #endif
@@ -2969,8 +2960,8 @@ static const struct i2c_device_id elan_ts_id[] = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id elants_of_match[] = {
-	{.compatible = "elan,ektf"},
-	{ /* sentinel */ }
+        { .compatible = "elan,ektf" },
+        { /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, elants_of_match);
 #endif
