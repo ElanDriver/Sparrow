@@ -132,11 +132,11 @@ static void elan_reset(void)
 	dev_err(&private_ts->client->dev,
 			"[elan]:%s enter\n", __func__);
 	gpio_set_value(private_ts->pdata->rst_gpio, 1);
-	mdelay(10);
+	usleep_range(10000, 12000);
 	gpio_set_value(private_ts->pdata->rst_gpio, 0);
-	mdelay(20);
+	msleep(20);
 	gpio_set_value(private_ts->pdata->rst_gpio, 1);
-	mdelay(10);
+	usleep_range(10000, 12000);
 }
 
 static void elan_switch_irq(int on)
@@ -161,11 +161,11 @@ static int elan_ts_poll(void)
 		if (status == 0)
 			break;
 		retry--;
-		mdelay(20);
+		msleep(20);
 	} while (status == 1 && retry > 0);
 
 	dev_dbg(&private_ts->client->dev,
-			"%s: poll interrupt status %s\n",\
+			"%s: poll interrupt status %s\n",
 			__func__, status == 1 ? "high" : "low");
 
 	return status == 0 ? 0 : -ETIMEDOUT;
@@ -218,6 +218,7 @@ static int elan_i2c_recv(const struct i2c_client *client, char *buf, int count)
 static int elan_ts_send_cmd(struct i2c_client *client,
 		uint8_t *cmd, size_t size)
 {
+	int err = 0;
 #ifdef ELAN_HID_IIC
 	dev_dbg(&client->dev,
 			"dump cmd: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x,\n",
@@ -228,16 +229,16 @@ static int elan_ts_send_cmd(struct i2c_client *client,
 			"dump cmd: %02x:%02x:%02x:%02x\n",
 			cmd[0], cmd[1], cmd[2], cmd[3]);
 #endif
-	if (elan_i2c_send(client, cmd, size) != size) {
+	err = elan_i2c_send(client, cmd, size);
+	if (err != size) {
 		dev_err(&client->dev,
 				"[elan error]%s: elan_ts_send_cmd failed\n",
 				__func__);
-		return -EINVAL;
 	} else
 		dev_err(&client->dev,
 				"[elan] elan_ts_send_cmd ok");
 
-	return size;
+	return err;
 }
 
 #ifndef ELAN_HID_IIC
@@ -252,19 +253,15 @@ static int elan_ts_get_data(struct i2c_client *client, uint8_t *cmd,
 	if (elan_ts_send_cmd(client, cmd, size) != size)
 		return -EINVAL;
 
-	mdelay(2);
-
-	rc = elan_ts_poll();
-	if (rc < 0)
+	if (elan_ts_poll() < 0)
 		return -EINVAL;
-	else{
-		rc = elan_i2c_recv(client, buf, size);
-		if (buf[0] != CMD_S_PKT || rc != size) {
-			dev_err(&client->dev,
-					"[elan error]%s: cmd respone error\n",\
-					__func__);
-			return -EINVAL;
-		}
+
+	rc = elan_i2c_recv(client, buf, size);
+	if (buf[0] != CMD_S_PKT || rc != size) {
+		dev_err(&client->dev,
+				"[elan error]%s: cmd respone error\n",
+				__func__);
+		return -EINVAL;
 	}
 
 	return 0;
@@ -324,80 +321,7 @@ static int __hello_packet_handler(struct i2c_client *client)
 }
 #endif
 
-int elan_read_fw_from_sdcard(char *file_path)
-{
-	mm_segment_t oldfs;
-	struct file *firmware_fp;
-	int ret = 0;
-	int retry = 0;
-	int  file_len;
-
-	if (file_fw_data_out != NULL)
-		kfree(file_fw_data_out);
-
-	oldfs = get_fs();
-	set_fs(KERNEL_DS);
-
-	for (retry = 0; retry < 5; retry++) {
-		firmware_fp = filp_open(file_path, O_RDONLY, 0);
-		if (IS_ERR(firmware_fp)) {
-			dev_err(&private_ts->client->dev,
-					"[elan] retry to open user bin filen\n");
-			mdelay(1000);
-		} else
-			break;
-	}
-
-	if (retry >= 5) {
-		dev_err(&private_ts->client->dev,
-				"[elan error] open %s file error!\n",\
-				file_path);
-		ret = -1;
-		goto out_read_fw_from_user2;
-	} else
-		dev_dbg(&private_ts->client->dev,
-				"[elan] open %s file sucess!\n", file_path);
-
-	file_len = firmware_fp->f_path.dentry->d_inode->i_size;
-	if (file_len == 0) {
-		dev_dbg(&private_ts->client->dev,
-				"elan file len error !!!!!!\n");
-		ret = -2;
-		goto out_read_fw_from_user1;
-	} else
-		PageNum = file_len / 132;
-
-	dev_dbg(&private_ts->client->dev,
-			"[elan] user bin data len=%d\n", file_len);
-
-	file_fw_data_out = kzalloc(file_len, GFP_KERNEL);
-	if (file_fw_data_out == NULL) {
-		dev_err(&private_ts->client->dev,
-				"[elan error] mallco file_fw_data_out error\n");
-		ret = -3;
-		goto out_read_fw_from_user1;
-	}
-
-	ret = firmware_fp->f_op->read(firmware_fp, file_fw_data_out,
-			file_len, &firmware_fp->f_pos);
-	if (ret != file_len) {
-		dev_err(&private_ts->client->dev,
-				"[elan error] read BIN file size error,ret = %d!\n",
-				ret);
-		ret = -4;
-	}
-
-	ret = 0;
-
-out_read_fw_from_user1:
-	filp_close(firmware_fp, NULL);
-out_read_fw_from_user2:
-	set_fs(oldfs);
-
-	return ret;
-}
-
-int WritePage(struct i2c_client *client, uint8_t * szPage, int byte, int which)
+int WritePage(struct i2c_client *client, uint8_t *szPage, int byte, int which)
 {
 	int len = 0;
 
@@ -406,7 +330,7 @@ int WritePage(struct i2c_client *client, uint8_t * szPage, int byte, int which)
 		dev_err(&client->dev,
 				"[elan] ERROR: write the %d th page error,len=%d\n",
 				which, len);
-		return -1;
+		return -EINVAL;
 	}
 
 	return 0;
@@ -419,6 +343,7 @@ int GetAckData(struct i2c_client *client)
 
 #ifdef ELAN_HID_IIC
 	uint8_t ack_buf[67] = { 0 };
+
 	len = elan_ts_poll();
 	len = elan_i2c_recv(client, ack_buf, 67);
 	dev_dbg(&client->dev,
@@ -429,11 +354,12 @@ int GetAckData(struct i2c_client *client)
 			ack_buf[8], ack_buf[9], ack_buf[10], ack_buf[11]);
 #else
 	uint8_t ack_buf[2] = { 0 };
+
 	len = elan_i2c_recv(client, ack_buf, 2);
 	if (len != 2) {
 		dev_err(&client->dev,
 				"[elan] ERROR: GetAckData. len=%d\r\n", len);
-		return -1;
+		return -EINVAL;
 	}
 #endif
 
@@ -461,43 +387,54 @@ int CheckIapMode(struct i2c_client *client)
 {
 	char buff[4] = { 0 };
 	int rc = 0;
+	int err = 0;
 
 	rc = elan_i2c_recv(client, buff, 4);
 	if (rc != 4) {
 		dev_err(&client->dev,
 				"[elan] ERROR: CheckIapMode. len=%d\r\n", rc);
-		return -1;
+		err =  -EINVAL;
+		goto err_recv_iapmod_fail;
 	} else
 		dev_err(&client->dev,
 				"Mode= 0x%x 0x%x 0x%x 0x%x\r\n",
 				buff[0], buff[1], buff[2], buff[3]);
 
 	return 0;
+
+err_recv_iapmod_fail:
+	return err;
 }
 
 #ifdef ELAN_HID_IIC
 int SendEndCmd(struct i2c_client *client)
 {
 	int len = 0;
+	int err = 0;
 	uint8_t send_cmd[37] = {0x04, 0x00, 0x23, 0x00, 0x03, 0x1A};
 
 	len = elan_ts_send_cmd(private_ts->client, send_cmd, sizeof(send_cmd));
 	if (len != sizeof(send_cmd)) {
 		dev_err(&client->dev,
 				"[elan] ERROR: Send Cmd fail!len=%d\r\n", len);
-		return -1;
+		err =  -EINVAL;
+		goto err_send_end_cmd_fail;
 	} else
 		dev_dbg(&client->dev,
 				"[elan] check send cmd = [%x, %x, %x, %x, %x, %x]\n",
 				send_cmd[0], send_cmd[1], send_cmd[2],
 				send_cmd[3], send_cmd[4], send_cmd[5]);
 	return 0;
+
+err_send_end_cmd_fail:
+	return err;
 }
 
 int HID_EnterISPMode(struct i2c_client *client)
 {
 	int len = 0;
 	int i;
+	int err = 0;
 	uint8_t flash_key[37]  = {0x04, 0x00, 0x23, 0x00, 0x03, 0x00,
 		0x04, 0x54, 0xc0, 0xe1, 0x5a};
 	uint8_t isp_cmd[37]    = {0x04, 0x00, 0x23, 0x00, 0x03, 0x00,
@@ -512,13 +449,15 @@ int HID_EnterISPMode(struct i2c_client *client)
 		dev_err(&client->dev,
 				"[elan] ERROR: Flash key fail!len=%d\r\n",
 				len);
-		return -1;
+		err = -EINVAL;
+		goto err_semd_flsh_cmd_fail;
 	} else
 		dev_dbg(&client->dev,
 				"[elan] FLASH key cmd = [%2x, %2x, %2x, %2x]\n",
 				flash_key[7], flash_key[8],
 				flash_key[9], flash_key[10]);
-	mdelay(20);
+
+	usleep_range(10000, 12000);
 
 	len = elan_ts_send_cmd(private_ts->client, isp_cmd,
 			sizeof(isp_cmd));
@@ -526,34 +465,37 @@ int HID_EnterISPMode(struct i2c_client *client)
 		dev_err(&client->dev,
 				"[elan] ERROR: EnterISPMode fail!len=%d\r\n",
 				len);
-		return -1;
+		return -EINVAL;
+		goto err_send_isp_cmd_fail;
 	} else
 		dev_dbg(&client->dev,
 				"[elan] IAPMode data cmd = [%2x, %2x, %2x, %2x]\n",
 				isp_cmd[7], isp_cmd[8],
 				isp_cmd[9], isp_cmd[10]);
 
-	mdelay(20);
+	msleep(20);
 	len = elan_ts_send_cmd(private_ts->client, check_addr,
 			sizeof(check_addr));
 	if (len != sizeof(check_addr)) {
 		dev_err(&client->dev,
 				"[elan] ERROR: Check Address fail!len=%d\r\n",
 				len);
-		return -1;
+		err = -EINVAL;
+		goto err_send_check_addr_cmd_fail;
 	} else
 		dev_dbg(&client->dev,
 				"[elan] Check Address cmd = [%2x, %2x, %2x, %2x]\n",
 				check_addr[7], check_addr[8],
 				check_addr[9], check_addr[10]);
 
-	mdelay(20);
+	msleep(20);
 	len = elan_i2c_recv(private_ts->client, buf, sizeof(buf));
 	if (len != sizeof(buf)) {
 		dev_err(&client->dev,
 				"[elan] ERROR: Check Address Read Data error.len=%d\n",
 				len);
-		return -1;
+		err =  -EINVAL;
+		goto err_recv_check_addr_fail;
 	} else {
 		dev_dbg(&client->dev, "[Check Addr]: ");
 		for (i = 0; i < (37+3)/8; i++)
@@ -565,12 +507,19 @@ int HID_EnterISPMode(struct i2c_client *client)
 	}
 
 	return 0;
+
+err_recv_check_addr_fail:
+err_send_check_addr_cmd_fail:
+err_send_isp_cmd_fail:
+err_semd_flsh_cmd_fail:
+	return err;
 }
 
 int HID_RecoveryISP(struct i2c_client *client)
 {
 	int len = 0;
 	int i;
+	int err = 0;
 	uint8_t flash_key[37] = {0x04, 0x00, 0x23, 0x00, 0x03, 0x00,
 		0x04, 0x54, 0xc0, 0xe1, 0x5a};
 	uint8_t check_addr[37] = {0x04, 0x00, 0x23,
@@ -583,14 +532,15 @@ int HID_RecoveryISP(struct i2c_client *client)
 		dev_err(&client->dev,
 				"[elan] ERROR: Flash key fail!len=%d\n",
 				len);
-		return -1;
+		err =  -EINVAL;
+		goto err_send_flash_cmd_fail;
 	} else
 		dev_dbg(&client->dev,
 				"[elan] FLASH key cmd = [%2x:%2x:%2x:%2x]\n",
 				flash_key[7], flash_key[8],
 				flash_key[9], flash_key[10]);
 
-	mdelay(40);
+	msleep(40);
 
 	len = elan_ts_send_cmd(private_ts->client,
 			check_addr, sizeof(check_addr));
@@ -598,20 +548,22 @@ int HID_RecoveryISP(struct i2c_client *client)
 		dev_err(&client->dev,
 				"[elan] ERROR: Check Address fail!len=%d\n",
 				len);
-		return -1;
+		err =  -EINVAL;
+		goto err_send_cmd_check_addr_fail;
 	} else
 		dev_dbg(&client->dev,
 				"[elan] Check Address cmd = [%2x:%2x:%2x:%2x]\n",
 				check_addr[7], check_addr[8],
 				check_addr[9], check_addr[10]);
 
-	mdelay(20);
+	msleep(20);
 	len = elan_i2c_recv(private_ts->client, buf, sizeof(buf));
 	if (len != sizeof(buf)) {
 		dev_dbg(&client->dev,
 				"[elan] ERROR: Check Address Read Data error.len=%d\n",
 				len);
-		return -1;
+		err =  -EINVAL;
+		goto err_recv_check_addr_fail;
 	} else {
 		dev_dbg(&client->dev, "[elan][Check Addr]: ");
 		for (i = 0; i < (37+3)/8; i++) {
@@ -624,12 +576,18 @@ int HID_RecoveryISP(struct i2c_client *client)
 	}
 
 	return 0;
+
+err_recv_check_addr_fail:
+err_send_cmd_check_addr_fail:
+err_send_flash_cmd_fail:
+	return err;
 }
 
 int CheckISPstatus(struct i2c_client *client)
 {
 	int len = 0;
 	int i;
+	int err = 0;
 	uint8_t checkstatus[37] = {0x04, 0x00, 0x23, 0x00, 0x03, 0x18};
 	uint8_t buf[67] = {0};
 
@@ -639,20 +597,22 @@ int CheckISPstatus(struct i2c_client *client)
 		dev_err(&client->dev,
 				"[elan] ERROR: Flash key fail!len=%d\n",
 				len);
-		return -1;
+		err =  -EINVAL;
+		goto err_send_flash_key_cmd_fail;
 	} else
 		dev_dbg(&client->dev,
 				"[elan] check status cmd = [%x:%x:%x:%x:%x:%x]\n",
 				checkstatus[0], checkstatus[1], checkstatus[2],
 				checkstatus[3], checkstatus[4], checkstatus[5]);
 
-	mdelay(10);
+	msleep(20);
 	len = elan_i2c_recv(private_ts->client, buf, sizeof(buf));
 	if (len != sizeof(buf)) {
 		dev_err(&client->dev,
 				"[elan] ERROR: Check Address Read Data error.len=%d\n",
 				len);
-		return -1;
+		err = -EINVAL;
+		goto err_recv_check_addr_fail;
 	} else {
 		dev_dbg(&client->dev, "[elan][Check status]: ");
 		for (i = 0; i < (37+3)/8; i++) {
@@ -667,6 +627,10 @@ int CheckISPstatus(struct i2c_client *client)
 	}
 
 	return 0;
+
+err_recv_check_addr_fail:
+err_send_flash_key_cmd_fail:
+	return err;
 }
 
 static int FW_Update(struct i2c_client *client, int source)
@@ -691,7 +655,7 @@ static int FW_Update(struct i2c_client *client, int source)
 	int retry_num = 0;
 	int rc, fw_size;
 	char *fw_name;
-	char fw_local_path[50];
+	int err = 0;
 
 	dev_dbg(&ts->client->dev, "[elan] enter %s.\n", __func__);
 
@@ -706,7 +670,8 @@ static int FW_Update(struct i2c_client *client, int source)
 		if (rc != 0) {
 			dev_err(&ts->client->dev,
 					"rc=%d, request_firmware fail\n", rc);
-			return -1;
+			return -EINVAL;
+			goto err_requesr_fw_fail;
 		} else
 			dev_dbg(&ts->client->dev,
 					"Firmware Size=%zu\n",
@@ -714,18 +679,6 @@ static int FW_Update(struct i2c_client *client, int source)
 		fw_data = p_fw_entry->data;
 		fw_size = p_fw_entry->size;
 		PageNum = fw_size/132;
-	} else if (source == 2) {
-		fw_name = kasprintf(GFP_KERNEL, "elants_i2c_%04x.bin",
-				ts->fw_id);
-		sprintf(fw_local_path, "%s%s", "/sdcard/", fw_name);
-		dev_dbg(&ts->client->dev, "[elan] Update Firmware from %s\n",
-				fw_local_path);
-		rc = elan_read_fw_from_sdcard(fw_local_path);
-		if (rc != 0) {
-			dev_err(&ts->client->dev, "read fw fail\n");
-			return -1;
-		}
-		fw_data = file_fw_data_out;
 	} else {
 		PageNum = sizeof(file_fw_data_out)/132;
 		fw_data = file_fw_data_out;
@@ -746,7 +699,7 @@ IAP_RESTART:
 			"[elan] res: 0x%x\n", res);
 	if (res == 0xa6) { /* 0xa6 recovery mode  */
 		elan_reset();
-		mdelay(200);
+		msleep(200);
 		dev_dbg(&ts->client->dev,
 				"[elan hid iap] Recovery mode\n");
 		res = HID_RecoveryISP(ts->client);
@@ -755,7 +708,7 @@ IAP_RESTART:
 		res = HID_EnterISPMode(ts->client);/*enter HID ISP mode*/
 	}
 
-	mdelay(50);
+	mslepp(50);
 
 	for (iPage = 1; iPage <= PageNum; iPage += 30) {
 		offset = 0;
@@ -764,9 +717,9 @@ IAP_RESTART:
 		else
 			write_times = 142;  /*30*132=3960, 3960=141*28+12*/
 
-		mdelay(5);
+		usleep_range(5000, 6000);
 		for (byte_count = 1; byte_count <= write_times; byte_count++) {
-			mdelay(1);
+			usleep_range(1000, 2000);
 			if (byte_count != write_times) {
 				/* header + data = 9+28=37 bytes*/
 				szBuff = fw_data + curIndex;
@@ -814,10 +767,10 @@ IAP_RESTART:
 			}
 		} /*end of for(byte_count=1;byte_count<=17;byte_count++)*/
 
-		mdelay(200);
+		msleep(200);
 		res = WritePage(ts->client, cmd_iap_write,
 				37, iPage);
-		mdelay(200);
+		msleep(200);
 		dev_dbg(&ts->client->dev, "[iap] iPage=%d :", iPage);
 		res = GetAckData(ts->client);
 		if (res < 0) {
@@ -833,18 +786,21 @@ IAP_RESTART:
 			}
 		}
 
-		mdelay(10);
+		usleep_range(10000, 12000);
 	} /*end of for(iPage = 1; iPage <= PageNum; iPage++)*/
 
 	res = SendEndCmd(ts->client);
-	mdelay(200);
+	msleep(200);
 	elan_reset();
-	mdelay(200);
+	msleep(200);
 	elan_ts_send_cmd(ts->client, cmd_idel, 37);
 	dev_dbg(&ts->client->dev, "[elan] Update Firmware successfully!\n");
 	elan_switch_irq(1);
 
 	return 0;
+
+err_requesr_fw_fail:
+	return err;
 }
 
 #else
@@ -864,11 +820,11 @@ static int FW_Update(struct i2c_client *client, int source)
 	const struct firmware *p_fw_entry;
 	const int PAGERETRY = 10;
 	int retry_cnt;
-	char fw_local_path[50];
 	char *fw_name;
 	int NEW_FW_VERSION = 0;
 	int New_FW_ID = 0;
 	int byte_count;
+	int err = 0;
 
 	if (source == 1) {
 		fw_name = kasprintf(GFP_KERNEL, "elants_i2c.bin");
@@ -879,7 +835,8 @@ static int FW_Update(struct i2c_client *client, int source)
 		if (rc != 0) {
 			dev_err(&client->dev,
 					"rc=%d, request_firmware fail\n", rc);
-			return -1;
+			err = -EINVAL;
+			goto err_request_fw_fail;
 		} else
 			dev_dbg(&client->dev, "Firmware Size=%zu\n",
 					p_fw_entry->size);
@@ -899,21 +856,6 @@ static int FW_Update(struct i2c_client *client, int source)
 			}
 		} else
 			dev_err(&ts->client->dev, "[elan] enter recovery mode");
-	} else if (source == 2) {
-		fw_data = NULL;
-		fw_size = 0;
-		fw_name = kasprintf(GFP_KERNEL, "elants_i2c_%04x.bin",
-				ts->fw_id);
-		sprintf(fw_local_path, "%s%s", "/sdcard/", fw_name);
-		dev_dbg(&client->dev, "[elan] Update Firmware from %s\n",\
-				fw_local_path);
-		rc = elan_read_fw_from_sdcard(fw_local_path);
-		if (rc != 0) {
-			dev_err(&client->dev, "read fw fail\n");
-			return -1;
-		}
-
-		fw_data = file_fw_data_out;
 	} else {
 		PageNum = sizeof(file_fw_data_out) / 132;
 		fw_data = file_fw_data_out;
@@ -927,7 +869,7 @@ IAP_RESTART:
 
 	elan_reset();
 	res = elan_ts_send_cmd(client, isp_cmd, sizeof(isp_cmd));
-	mdelay(5);
+	usleep_range(5000, 6000);
 	res = CheckIapMode(client);
 
     /*send dummy byte*/
@@ -935,7 +877,8 @@ IAP_RESTART:
 	if (res != sizeof(data)) {
 		dev_err(&client->dev,
 				"[elan] dummy error code = %d\n", res);
-		return -1;
+		err = -EINVAL;
+		goto err_send_dummy_fail;
 	} else {
 		dev_dbg(&client->dev,
 				"[elan] send Dummy byte sucess data:%x", data);
@@ -943,7 +886,7 @@ IAP_RESTART:
 
     /* Start IAP*/
 	for (iPage = 1; iPage <= PageNum; iPage++) {
-#if 1
+#ifndef USE_128_MODE
 PAGE_REWRITE:
 		/*write every page*/
 		for	(byte_count = 1; byte_count <= 5; byte_count++) {
@@ -965,13 +908,13 @@ PAGE_REWRITE:
 		res = WritePage(client, szBuff, PageSize, iPage);
 #endif
 		if (iPage == PageNum || iPage == 1)
-			mdelay(600);
+			msleep(600);
 		else
-			mdelay(50);
+			msleep(50);
 
 		res = GetAckData(private_ts->client);
 		if (ACK_OK != res) {
-			mdelay(50);
+			msleep(50);
 			dev_err(&client->dev,
 					"[ELAN] ERROR: GetAckData fail! res=%d\n",
 					res);
@@ -981,7 +924,8 @@ PAGE_REWRITE:
 					dev_err(&client->dev,
 							"[ELAN] ID 0x%02x %dth page ReWrite%d times fails!\n",
 							data, iPage, PAGERETRY);
-				   return E_FD;
+				    err =  E_FD;
+					goto err_page_rewirte_fail;
 				} else {
 					dev_dbg(&client->dev,
 							"[ELAN] ---%d---page ReWrite %d times!\n",
@@ -994,7 +938,8 @@ PAGE_REWRITE:
 					dev_err(&client->dev,
 							"[ELAN] ID 0x%02x ReStart %d times fails!\n",
 							data, IAPRESTART);
-					return E_FD;
+					err = E_FD;
+					goto err_restart_times_fail;
 				} else {
 					dev_err(&client->dev,
 							"[ELAN] ===%d=== page ReStart %d times!\n",
@@ -1009,12 +954,12 @@ PAGE_REWRITE:
 						"[elan]---%d--- page flash ok\n",
 						iPage);
 		}
-		mdelay(10);
-	} /*end of for(iPage = 1; iPage <= PageNum; iPage++)*/
-no_update_elan_fw:
+		usleep_range(5000, 6000);
+	}
+
 	elan_reset();
 	res = __hello_packet_handler(client);
-	mdelay(500);
+	msleep(500);
 	for (retry_cnt = 0; retry_cnt < 3; retry_cnt++) {
 		rc = __fw_packet_handler(private_ts->client);
 		if (rc < 0)
@@ -1026,6 +971,13 @@ no_update_elan_fw:
 	}
 
 	return 0;
+
+err_restart_times_fail:
+err_page_rewirte_fail:
+err_send_dummy_fail:
+no_update_elan_fw:
+err_request_fw_fail:
+	return err;
 }
 #endif
 
@@ -1081,7 +1033,7 @@ static DEVICE_ATTR(calibrate, S_IWUSR, NULL, store_calibrate);
 static ssize_t show_gpio_int(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d\n",
+	return snprintf(buf, 2, "%d\n",
 			gpio_get_value(private_ts->pdata->intr_gpio));
 }
 static DEVICE_ATTR(gpio_int, S_IRUGO, show_gpio_int, NULL);
@@ -1093,6 +1045,7 @@ static ssize_t store_update_fw_from_system(struct device *dev,
 {
 	int ret;
 	struct elan_ts_data *ts = private_ts;
+
 	disable_irq(private_ts->pdata->elan_irq);
 	ret = FW_Update(ts->client, 1);
 	enable_irq(private_ts->pdata->elan_irq);
@@ -1105,32 +1058,13 @@ static ssize_t store_update_fw_from_system(struct device *dev,
 static DEVICE_ATTR(update_fw_system, S_IWUSR, NULL,
 		store_update_fw_from_system);
 
-
-static ssize_t store_update_fw_from_sdcard(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t count)
-{
-	int ret;
-	struct elan_ts_data *ts = private_ts;
-	disable_irq(private_ts->pdata->elan_irq);
-	ret = FW_Update(ts->client, 2);
-	enable_irq(private_ts->pdata->elan_irq);
-	if (ret == 0)
-		dev_info(&ts->client->dev, "Update Touch Screen Success!\n");
-	else
-		dev_err(&ts->client->dev, "Update Touch Screen Fail!\n");
-	return count;
-}
-static DEVICE_ATTR(update_fw_sdcard, S_IWUSR, NULL,
-		store_update_fw_from_sdcard);
-
 static ssize_t show_fw_info(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct elan_ts_data *ts = private_ts;
-	return sprintf(buf,
-			"FW VER = 0x%x, FW ID = 0x%x, BC VER = 0x%x\n",
-			ts->fw_ver, ts->fw_id, ts->fw_bcd);
+
+	return snprintf(buf, 4,
+			"FW VER = 0x%x\n", ts->fw_ver);
 }
 static ssize_t store_fw_info(struct device *dev,
 		struct device_attribute *attr,
@@ -1138,6 +1072,7 @@ static ssize_t store_fw_info(struct device *dev,
 {
 	int ret;
 	struct elan_ts_data *ts = private_ts;
+
 	disable_irq(ts->pdata->elan_irq);
 	ret = __fw_packet_handler(ts->client);
 	enable_irq(ts->pdata->elan_irq);
@@ -1152,7 +1087,6 @@ static struct attribute *elan_default_attributes[] = {
 	&dev_attr_enable_irq.attr,
 	&dev_attr_disable_irq.attr,
 	&dev_attr_calibrate.attr,
-	&dev_attr_update_fw_sdcard.attr,
 	&dev_attr_update_fw_system.attr,
 	&dev_attr_fw_info.attr,
 	NULL
@@ -1270,7 +1204,6 @@ static long elan_iap_ioctl(struct file *filp,
 		break;
 	case IOCTL_CHECK_RECOVERY_MODE:
 		return private_ts->recover;
-		break;
 	case IOCTL_ROUGH_CALIBRATE:
 		return elan_ts_rough_calibrate(private_ts->client);
 	case IOCTL_I2C_INT:
@@ -1318,7 +1251,6 @@ static void elan_touch_node_init(void)
 		dev_info(&ts->client->dev, "proc_create ok!!\n");
 #endif
 
-	return;
 }
 
 #ifdef ELAN_HID_IIC
@@ -1330,7 +1262,7 @@ static int elan_ktf_ts_get_data(struct i2c_client *client,
 
 	if (buf == NULL)
 		return -EINVAL;
-#if 1
+#ifdef ELAN_I2C_TRAN
 	if ((elan_ts_send_cmd(client, cmd, w_size)) != w_size) {
 		dev_err(&client->dev, "[elan]%s: elan_ts_send_cmd failed\n",
 				__func__);
@@ -1338,7 +1270,7 @@ static int elan_ktf_ts_get_data(struct i2c_client *client,
 	}
 #else
 	if ((i2c_master_send(client, cmd, w_size)) != w_size) {
-		dev_err(&client->dev, "[elan]%s: i2c_master_send failed\n",\
+		dev_err(&client->dev, "[elan]%s: i2c_master_send failed\n",
 				__func__);
 		return -EINVAL;
 	}
@@ -1588,7 +1520,7 @@ static int __fw_packet_handler(struct i2c_client *client)
 
 #else
 	elan_i2c_send(client, cmd_getinfo, sizeof(cmd_getinfo));
-	mdelay(10);
+	usleep_range(10000, 12000);
 	elan_i2c_recv(client, adcinfo_buf, 17);
 	x = adcinfo_buf[2]+adcinfo_buf[6];
 	y = adcinfo_buf[3]+adcinfo_buf[7];
@@ -1644,7 +1576,7 @@ static int elan_ts_rough_calibrate(struct i2c_client *client)
 
 	if ((elan_ts_send_cmd(client, cal_cmd, sizeof(cal_cmd)))
 			!= sizeof(cal_cmd)) {
-		dev_err(&client->dev, "[elan] %s: i2c_master_send failed\n",\
+		dev_err(&client->dev, "[elan] %s: i2c_master_send failed\n",
 				__func__);
 		return -EINVAL;
 	}
@@ -1743,7 +1675,7 @@ static void check_update_flage(struct elan_ts_data *ts)
 update_elan_fw:
 
 	FW_Update(ts->client, 1);
-	mdelay(500);
+	msleep(500);
 	elan_switch_irq(0);
 
 	for (retry_cnt = 0; retry_cnt < 3; retry_cnt++) {
@@ -1757,7 +1689,7 @@ update_elan_fw:
 	}
 
 	elan_switch_irq(1);
-	mdelay(200);
+	msleep(200);
 	elan_ts_rough_calibrate(ts->client);
 
 /*no_update_elan_fw:*/
@@ -1765,7 +1697,6 @@ update_elan_fw:
 			"[elan] %s, fw check end..............\n",
 			__func__);
 
-	return;
 }
 #endif
 
@@ -1773,6 +1704,7 @@ static int elan_request_input_dev(struct elan_ts_data *ts)
 {
 	int err = 0;
 	int i = 0;
+
 	ts->input_dev = input_allocate_device();
 	if (ts->input_dev == NULL) {
 		err = -ENOMEM;
@@ -1787,10 +1719,10 @@ static int elan_request_input_dev(struct elan_ts_data *ts)
 	for (i = 0; i < ARRAY_SIZE(key_value); i++)
 		__set_bit(key_value[i], ts->input_dev->keybit);
 
-	ts->input_dev->evbit[0] = BIT_MASK(EV_SYN)|
-		BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS) ;
-	ts->input_dev->absbit[0] = BIT(ABS_X) |
-		BIT(ABS_Y) | BIT(ABS_PRESSURE);
+	ts->input_dev->evbit[0] =
+		BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+	ts->input_dev->absbit[0] =
+		BIT(ABS_X) | BIT(ABS_Y) | BIT(ABS_PRESSURE);
 	__set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit);
 
 #ifdef ELAN_ICS_SLOT_REPORT
@@ -1835,6 +1767,7 @@ static void elan_touch_esd_func(struct work_struct *work)
 {
 	int res;
 	struct i2c_client *client = private_ts->client;
+
 	dev_info(&private_ts->client->dev, "esd %s: enter.......", __func__);
 
 	if (private_ts->power_lock == 1)
@@ -1856,7 +1789,6 @@ elan_esd_check_out:
 	queue_delayed_work(esd_wq, &esd_work, delay);
 	dev_info(&private_ts->client->dev,
 			"[elan esd] %s: out.......", __func__);
-	return;
 }
 #endif
 
@@ -2015,6 +1947,7 @@ static void elan_ts_handler_event(struct elan_ts_data *ts, uint8_t *buf)
 static int elan_ts_recv_data(struct elan_ts_data *ts, uint8_t *buf)
 {
 	int rc;
+	int err = 0;
 
 #ifdef ELAN_HID_IIC
 #ifdef TEN_FINGERS
@@ -2028,7 +1961,8 @@ static int elan_ts_recv_data(struct elan_ts_data *ts, uint8_t *buf)
 	rc = elan_i2c_recv(ts->client, buf, PACKET_SIZE);
 	if (PACKET_SIZE != rc) {
 		dev_err(&ts->client->dev, "[elan error] elan_ts_recv_data\n");
-		return -1;
+		err = -EINVAL;
+		goto err_recv_packet1_fail;
 	}
 #ifdef ELAN_HID_IIC
 	if (FINGERS_PKT == buf[2]) {
@@ -2037,7 +1971,8 @@ static int elan_ts_recv_data(struct elan_ts_data *ts, uint8_t *buf)
 			rc = elan_i2c_recv(ts->client, buf1, PACKET_SIZE);
 			if (rc < 0) {
 				dev_err(&ts->client->dev, "[elan error] elan_ts_recv_data next packet error\n");
-				return -1;
+				err = -EINVAL;
+				goto err_recv_packet2_fail;
 			}
 			for (i = 3; i < 67; i++)
 				buf[55+i] = buf1[i];
@@ -2093,12 +2028,20 @@ static int elan_ts_recv_data(struct elan_ts_data *ts, uint8_t *buf)
 				buf[4], buf[5], buf[6], buf[7]);
 #endif
 		elan_ts_handler_event(ts, buf);
-		return -1;
+		err = -EINVAL;
+		goto err_other_event_packet_fail;
 	}
 #ifdef ELAN_ESD_CHECK
 	atomic_set(&elan_cmd_response, 1);
 #endif
 	return 0;
+
+err_other_event_packet_fail:
+#ifdef ELAN_HID_IIC
+err_recv_packet2_fail:
+#endif
+err_recv_packet1_fail:
+	return err;
 }
 
 #ifdef ELAN_HID_PEN
@@ -2180,6 +2123,7 @@ static void elan_ts_report_data(struct elan_ts_data *ts, uint8_t *buf)
 	uint16_t y = 0;
 	int position = 0;
 	uint8_t button_byte = 0;
+
 	finger_num = FINGERS_NUM;
 
 #ifdef TWO_FINGERS
@@ -2279,10 +2223,9 @@ static void elan_ts_report_data(struct elan_ts_data *ts, uint8_t *buf)
 #endif
 	}
 	input_sync(ts->input_dev);
-	return;
 }
 
-#if 0
+#ifndef USE_THREAD
 static irqreturn_t elan_ts_irq_handler(int irq, void *dev_id)
 {
 	int rc = 0;
@@ -2320,6 +2263,7 @@ static int touch_event_handler(void *unused)
 	int rc = 0;
 	struct elan_ts_data *ts = private_ts;
 	struct sched_param param = { .sched_priority = 4};
+
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	do {
@@ -2427,7 +2371,7 @@ static int elan_ts_setup(struct i2c_client *client)
 #endif
 
 	elan_reset();
-	mdelay(200);
+	msleep(200);
 	rc = __hello_packet_handler(client);
 	if (rc < 0)
 		dev_err(&client->dev, "[elan error] %s, hello_packet_handler fail,rc = %d\n",
@@ -2484,7 +2428,7 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 		return ts->pdata->rst_gpio;
 	}
 
-	dev_info(&ts->client->dev, "[elan] ts->intr_gpio = %d, ts->rst_gpio = %d\n",
+	dev_err(&ts->client->dev, "[elan] ts->intr_gpio = %d, ts->rst_gpio = %d\n",
 			ts->pdata->intr_gpio, ts->pdata->rst_gpio);
 
 	ts->pdata->elan_irq = gpio_to_irq(ts->pdata->intr_gpio);
@@ -2662,8 +2606,6 @@ static int elan_ts_probe(struct i2c_client *client,
 	/*kzalloc struct elan_ts_data memory */
 	ts = kzalloc(sizeof(struct elan_ts_data), GFP_KERNEL);
 	if (ts == NULL) {
-		dev_dbg(&client->dev, "[elan] %s: allocate elan_ts_data failed\n",
-				__func__);
 		err = -ENOMEM;
 		goto err_alloc_data_failed;
 	}
@@ -2699,17 +2641,16 @@ static int elan_ts_probe(struct i2c_client *client,
 		ts->pdata->rst_gpio   =    pdata->rst_gpio;
 		ts->pdata->intr_gpio  =    pdata->intr_gpio;
 		ts->pdata->elan_irq   =    gpio_to_irq(pdata->intr_gpio);
-		dev_dbg(&client->dev, "[elan]:rst_gpio = %d, intr_gpio = %d\n",
+		dev_err(&client->dev, "[elan]:rst_gpio = %d, intr_gpio = %d\n",
 				pdata->rst_gpio, pdata->intr_gpio);
 	} else
 		dev_err(&client->dev,
 				"[elan] get pdata faile,please check board file setting\n");
 
-	dev_dbg(&client->dev,
+	dev_err(&client->dev,
 			"[elan] rst_gpio = %d, intr_gpio = %d\n",
 			ts->pdata->rst_gpio, ts->pdata->intr_gpio);
 #endif
-
 	dev_err(&client->dev, "[elan] power setting....\n");
 	err = elan_ts_power_init(ts, true);
 	if (err) {
@@ -2723,7 +2664,6 @@ static int elan_ts_probe(struct i2c_client *client,
 		dev_err(&client->dev, "power on failed");
 		goto pwr_deinit;
 	}
-
 	private_ts = ts;
 	/*init gpio setring rst output / int input */
 	err = elan_gpio_init(client, pdata);
@@ -2795,6 +2735,7 @@ err_check_functionality_failed:
 static int elan_ts_remove(struct i2c_client *client)
 {
 	struct elan_ts_data *ts = i2c_get_clientdata(client);
+
 	dev_info(&client->dev, "%s: enter\n", __func__);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -2815,6 +2756,7 @@ static int elan_ts_set_power_state(struct i2c_client *client, int state)
 	cmd[8] |= (state << 3);
 #else
 	uint8_t cmd[] = {CMD_W_PKT, 0x50, 0x00, 0x01};
+
 	cmd[1] |= (state << 3);
 #endif
 	size = sizeof(cmd);
@@ -2890,6 +2832,7 @@ static int __maybe_unused elan_ts_resume(struct device *dev)
 static void elan_ts_early_suspend(struct early_suspend *h)
 {
 	struct elan_ts_data *ts;
+
 	ts = container_of(h, struct elan_ts_data, early_suspend);
 	elan_ts_suspend(&ts->client->dev);
 }
@@ -2897,6 +2840,7 @@ static void elan_ts_early_suspend(struct early_suspend *h)
 static void elan_ts_late_resume(struct early_suspend *h)
 {
 	struct elan_ts_data *ts;
+
 	ts = container_of(h, struct elan_ts_data, early_suspend);
 	elan_ts_resume(&ts->client->dev);
 }
@@ -2904,14 +2848,14 @@ static void elan_ts_late_resume(struct early_suspend *h)
 
 
 static const struct i2c_device_id elan_ts_id[] = {
-	{ELAN_TS_NAME, 0},
+	{ ELAN_TS_NAME, 0 },
 	{ }
 };
 
 #ifdef CONFIG_OF
 static const struct of_device_id elants_of_match[] = {
-	{.compatible = "elan,ektf"},
-	{ /* sentinel */ }
+	{ .compatible = "elan,ektf" },
+	{ },
 };
 MODULE_DEVICE_TABLE(of, elants_of_match);
 #endif
@@ -2944,7 +2888,6 @@ module_init(elan_ts_init);
 static void __exit elan_ts_exit(void)
 {
 	i2c_del_driver(&elan_ts_driver);
-	return;
 }
 module_exit(elan_ts_exit);
 

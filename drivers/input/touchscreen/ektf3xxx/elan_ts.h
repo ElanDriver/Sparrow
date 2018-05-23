@@ -1,3 +1,18 @@
+/*	
+ * drivers/input/touchscreen/ektf3xx/elan_ts.h
+ * Elan Microelectronics touch panels with I2C interface
+ *
+ * Copyright (C) 2014 Elan Microelectronics Corporation.
+ * Scott Liu <scott.liu@emc.com.tw>
+ *
+ */
+
+/*
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ */
+
 #ifndef _LINUX_ELAN_TS_H
 #define _LINUX_ELAN_TS_H
 
@@ -12,7 +27,8 @@
 
 #define ELAN_7BITS_ADDR 0x10
 #define ELAN_8BITS_ADDR (ELAN_7BITS_ADDR<<1)
-
+#define ELAN_I2C_TRAN
+#define USE_THREAD
 #define IAPRESTART 5
 
 /*sleep  mode*/
@@ -78,19 +94,6 @@
 
 /***********************debug info macro switch***********************/
 #define PRINT_INT_INFO
-/*#define PRINT_INT_INFO1*/
-
-#ifdef PRINT_INT_INFO1
-	static bool debug_flage = true;
-	#define elan_info(fmt, args...) do {\
-		if (debug_flage) \
-			printk(KERN_INFO "[elan debug]:"fmt"\n", ##args);\
-	} while (0);
-#else
-	#define elan_info(fmt, args...)
-#endif
-
-
 /*************************have button macro switch*********************/
 static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 
@@ -167,7 +170,7 @@ static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 
 
 /**********************update firmware macro switch*******************/
-
+/*#define USE_128_MODE*/
 #define IAP_PORTION
 
 #if defined IAP_PORTION || defined ELAN_RAM_XX

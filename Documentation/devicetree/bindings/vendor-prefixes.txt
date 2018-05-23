@@ -57,6 +57,7 @@ est	ESTeem Wireless Modems
 eukrea  Eukréa Electromatique
 everest	Everest Semiconductor Co. Ltd.
 excito	Excito
+elan	Elan Microelectronics Corp
 fcs	Fairchild Semiconductor
 fairchild	Fairchild Semiconductor International, Inc.
 focaltech	Focaltech systems
