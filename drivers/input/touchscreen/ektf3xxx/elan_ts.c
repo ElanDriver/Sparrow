@@ -881,7 +881,7 @@ IAP_RESTART:
 		goto err_send_dummy_fail;
 	} else {
 		dev_dbg(&client->dev,
-				"[elan] send Dummy byte sucess data:%x", data);
+				"[elan] send Dummy byte success data:%x", data);
 	}
 
     /* Start IAP*/
@@ -2595,7 +2595,7 @@ static int elan_ts_probe(struct i2c_client *client,
 
 	dev_info(&client->dev, "[elan] enter probe....\n");
 
-    /*check i2c bus support fuction*/
+    /*check i2c bus support function*/
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		dev_dbg(&client->dev, "[elan] %s: i2c check functionality error\n",
 				__func__);

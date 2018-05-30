@@ -1,4 +1,4 @@
-/*	
+/*
  * drivers/input/touchscreen/ektf3xx/elan_ts.h
  * Elan Microelectronics touch panels with I2C interface
  *
