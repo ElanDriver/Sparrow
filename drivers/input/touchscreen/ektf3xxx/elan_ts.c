@@ -105,8 +105,8 @@ static unsigned long delay = 2*HZ;
 
 static struct elan_ts_data *private_ts;
 
-#define FT_VTG_MIN_UV		2850000
-#define FT_VTG_MAX_UV		2850000
+#define FT_VTG_MIN_UV		3300000
+#define FT_VTG_MAX_UV		3300000
 #define FT_I2C_VTG_MIN_UV	1800000
 #define FT_I2C_VTG_MAX_UV	1800000
 
@@ -1063,7 +1063,7 @@ static ssize_t show_fw_info(struct device *dev,
 {
 	struct elan_ts_data *ts = private_ts;
 
-	return snprintf(buf, 4,
+	return snprintf(buf, 20,
 			"FW VER = 0x%x\n", ts->fw_ver);
 }
 static ssize_t store_fw_info(struct device *dev,
