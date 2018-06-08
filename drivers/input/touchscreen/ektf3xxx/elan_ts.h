@@ -17,9 +17,21 @@
 #define _LINUX_ELAN_TS_H
 
 /****************************customer info****************************/
-#define LCM_X_MAX 1280
-#define LCM_Y_MAX 800
-
+#define ELAN_LCM_X	800
+#define ELAN_LCM_Y	1280
+#define ELAN_DEFAULT_X   1473
+#define ELAN_DEFAULT_Y   2368
+#define ELAN_DEFAULT_FINGER_COUNT 10
+#define ELAN_ENABLE_HID_IIC	0
+#define ELAN_ENABLE_ACTIVE_PEN	0
+#define ELAN_ACTIVE_PEN_ID	0x07
+#define ELAN_HAND_ID	0x62
+#define ELAN_HID_HAND_ID	0x01
+#define ELAN_RECV_PACKET_SIZE	35
+#define ELAN_BUF_SIZE	67
+#define ELAN_SWAP_X_Y	0
+#define ELAN_ROTATE_X	0
+#define ELAN_ROTATE_Y	0
 /****************************elan data info****************************/
 
 /*i2c info*/
@@ -50,91 +62,20 @@
 /*#define ELAN_RAM_XX*/
 
 /**********************fingers number macro switch**********************/
-/*#define TWO_FINGERS*/
-/*#define FIVE_FINGERS*/
-#define TEN_FINGERS
-/*#define ELAN_HID_IIC*/
-/*#define ELAN_HID_PEN*/
-
 /*#define ELAN_BUFFER_MODE*/
 /*#define ELAN_ICS_SLOT_REPORT*/
 
-
-#ifdef ELAN_HID_PEN
-	#define  PEN_PKT			0x0D
-#endif
-
-#ifdef TWO_FINGERS
-	#define FINGERS_PKT			0x5A
-	#define PACKET_SIZE			8
-	#define FINGERS_NUM			2
-#endif
-
-#ifdef FIVE_FINGERS
-	#define FINGERS_PKT			0x5D
-	#define PACKET_SIZE			18
-	#define FINGERS_NUM			5
-#endif
-
-#ifdef TEN_FINGERS
-	#ifdef ELAN_HID_IIC
-		#define PACKET_SIZE		67
-		#define FINGERS_PKT		0x3F
-	#else
-		#define FINGERS_PKT		0x62
-	#ifdef ELAN_BUFFER_MODE
-		#define PACKET_SIZE		55
-	#else
-		#define PACKET_SIZE		35
-	#endif
-	#endif
-
-	#define FINGERS_NUM			10
-#endif
-
 /***********************debug info macro switch***********************/
 #define PRINT_INT_INFO
+#define DRV_VERSION "1.0.1"
 /*************************have button macro switch*********************/
 static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
 
-/*#define TPD_HAVE_BUTTON*/
-#ifdef TPD_HAVE_BUTTON
-	static const int virtual_button[][2] = {
-			{20,   80},
-			{120, 180},
-			{220, 280},
-			{320, 380}
-		};
-#endif
-
-#ifdef ELAN_HID_IIC
 
 #define  ELAN_KEY_BACK    0x02
 #define  ELAN_KEY_MENU    0x01
 #define  ELAN_KEY_NONE    0x00
 #define  ELAN_KEY_HOME    0x03
-
-#else
-
-#define TPD_HAVE_KEY
-#ifdef TPD_HAVE_KEY
-#define TWO_LAYER
-
-#ifdef TWO_LAYER
-	#define ELAN_KEY_NONE 0x01
-	#define ELAN_KEY_BACK 0x21
-	#define ELAN_KEY_HOME 0x41
-	#define ELAN_KEY_MENU 0x81
-#endif
-
-#ifdef ONE_LAYER
-	#define FLAG_MENU	0x04
-    #define FLAG_HOME	0x08
-    #define FLAG_BACK	0x10
-#endif
-#endif
-
-#endif
 
 /*************************dev file macro switch********************/
 #define ELAN_IAP_DEV

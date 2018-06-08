@@ -11,7 +11,23 @@ Elan Ektf3xx series touch controller
 									host, same as "interrupts" node.It will also contain
 									active low or active high information
 		- elan,reset-gpio		: Reset gpio to control the reset of chip.
-
+		- elan,lcm-size-x		: Lcm X Resolution.
+		- elan,lcm-size-y		: Lcm Y Resolution.
+		- elan,tp-size-x		: Elan panel X Resolution.
+		- elan,tp-size-y		: Elan panel Y Resolution.
+		- elan,finger-count		: Elan product could support point number.
+		- elan,enale-hid-iic	: Elan product support HID IIC protocol or not.
+		- elan,enable-hid-pen	: Elan product support active pen or not.
+		- elan,pen-id			: Active pen Id.
+		- elan,hand-id			: Elan product multi point id, 2 point id 0x5A,
+									5 point id 0x5D, 10 point id 0x62.
+		- elan,hid-hand-id		: Elan product support HID IIC protocol ,finger id 0x01.
+		- elan,packet-size		: Elan product multi point receive data size,
+									2 point receive 8byte, 5 point receive 18byte,
+									10 point receive.
+		- elan,swap-x-y			: Swap x y.
+		- elan,rotate-x			: Rotate x.
+		- elan,rotate-y			: Rotate y.
 
 	Optional properties:
 
@@ -32,5 +48,19 @@ Elan Ektf3xx series touch controller
 				elan,irq-gpio = <&msmgpio 1 0x00>;
 				interrupt-parent = <&msmgpio>;
 				interrupts = <1 0x2>;
+				elan,lcm-size-x = <800>;
+				elan,lcm-size-y = <1280>;
+				elan,tp-size-x = <1473>;
+				elan,tp-size-y = <2368>;
+				elan,finger-count = <10>;
+				elan,enale-hid-iic = <0>;
+				elan,enable-hid-pen = <0>;
+				elan,pen-id = <0x07>;
+				elan,hand-id = <0x62>;
+				elan,hid-hand-id = <0x01>;
+				elan,packet-size = <35>;
+				elan,swap-x-y = <0>;
+				elan,rotate-x = <0>;
+				elan,rotate-y = <0>;
 			};
 		};

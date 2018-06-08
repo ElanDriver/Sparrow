@@ -40,9 +40,23 @@
 		elan,reset-gpio = <&tlmm 64 0x00>;
 		elan,irq-gpio = <&tlmm 65 0x2008>;
 		interrupts = <65 0x2>;
+		elan,lcm-size-x = <800>;
+		elan,lcm-size-y = <1280>;
+		elan,tp-size-x = <1473>;
+		elan,tp-size-y = <2368>;
+		elan,finger-count = <10>;
+		elan,enale-hid-iic = <0>;
+		elan,enable-hid-pen = <0>;
+		elan,pen-id = <0x07>;
+		elan,hand-id = <0x62>;
+		elan,hid-hand-id = <0x01>;
+		elan,packet-size = <35>;
+		elan,swap-x-y = <0>;
+		elan,rotate-x = <0>;
+		elan,rotate-y = <0>;
 	};
 };
-	
+
 &mdss_dsi {
 	hw-config = "single_dsi";
 };
