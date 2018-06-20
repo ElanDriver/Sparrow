@@ -21,17 +21,11 @@
 #define ELAN_LCM_Y	1280
 #define ELAN_DEFAULT_X   1473
 #define ELAN_DEFAULT_Y   2368
-#define ELAN_DEFAULT_FINGER_COUNT 10
-#define ELAN_ENABLE_HID_IIC	0
-#define ELAN_ENABLE_ACTIVE_PEN	0
 #define ELAN_ACTIVE_PEN_ID	0x07
 #define ELAN_HAND_ID	0x62
 #define ELAN_HID_HAND_ID	0x01
 #define ELAN_RECV_PACKET_SIZE	35
 #define ELAN_BUF_SIZE	67
-#define ELAN_SWAP_X_Y	0
-#define ELAN_ROTATE_X	0
-#define ELAN_ROTATE_Y	0
 /****************************elan data info****************************/
 
 /*i2c info*/

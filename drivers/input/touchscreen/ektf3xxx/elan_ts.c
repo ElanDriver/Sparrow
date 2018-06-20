@@ -54,9 +54,8 @@ struct elan_i2c_platform_data {
 	int intr_gpio;
 	int rst_gpio;
 	int elan_irq;
-	int finger_count;
-	int enable_hid_iic;
-	int enable_pen;
+	bool enable_hid_iic;
+	bool enable_pen;
 	int lcm_size_x;
 	int lcm_size_y;
 	int abs_size_x;
@@ -65,9 +64,9 @@ struct elan_i2c_platform_data {
 	int hid_hand_id;
 	int hand_id;
 	int packet_size;
-	int swap_x_y;
-	int rotate_x;
-	int rotate_y;
+	bool swap_x_y;
+	bool rotate_x;
+	bool rotate_y;
 };
 
 struct elan_ts_data {
@@ -2158,35 +2157,37 @@ static void elan_ts_report_data(struct elan_ts_data *ts, uint8_t *buf)
 	int position = 0;
 	uint8_t button_byte = 0;
 
-	finger_num = pdata->finger_count;
-
-	if (pdata->finger_count == 2) {
+	if (pdata->hand_id == 0x5A) {
 		num = buf[7] & 0x03;
 		fbits = buf[7] & 0x03;
 		idx = 1;
 		button_byte = buf[pdata->packet_size - 1];
+		finger_num = 2;
 	}
 
 
-	if (pdata->finger_count == 5) {
+	if (pdata->hand_id == 0x5D) {
 		num = buf[1] & 0x07;
 		fbits = buf[1] >> 3;
 		idx = 2;
 		button_byte = buf[pdata->packet_size - 1];
+		finger_num = 5;
 	}
 
-	if (pdata->finger_count == 10) {
-		if (pdata->enable_hid_iic) {
-			num = buf[1];
-			idx = 3;
-			button_byte = buf[63];
-		} else {
-			fbits = buf[2] & 0x30;
-			fbits = (fbits << 4) | buf[1];
-			num = buf[2] & 0x0f;
-			idx = 3;
-			button_byte = buf[pdata->packet_size - 1];
-		}
+	if (pdata->enable_hid_iic) {
+		num = buf[1];
+		idx = 3;
+		button_byte = buf[63];
+		finger_num = 10;
+	}
+
+	if (pdata->hand_id == 0x62) {
+		fbits = buf[2] & 0x30;
+		fbits = (fbits << 4) | buf[1];
+		num = buf[2] & 0x0f;
+		idx = 3;
+		button_byte = buf[pdata->packet_size - 1];
+		finger_num = 10;
 	}
 
 	if (pdata->enable_pen)
@@ -2460,26 +2461,10 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 		pdata->abs_size_y = ELAN_DEFAULT_Y;
 	}
 
-	ret = of_property_read_u32(np, "elan,finger-count",
-						&pdata->finger_count);
-	if (ret) {
-		dev_err(dev, "Unset finger count, use default\n");
-		pdata->finger_count = ELAN_DEFAULT_FINGER_COUNT;
-	}
-
-	ret = of_property_read_u32(np, "elan,enale-hid-iic",
-						&pdata->enable_hid_iic);
-	if (ret) {
-		dev_err(dev, "Unset hid over iic, use default\n");
-		pdata->enable_hid_iic = ELAN_ENABLE_HID_IIC;
-	}
-
-	ret = of_property_read_u32(np, "elan,enable-hid-pen",
-					&pdata->enable_pen);
-	if (ret) {
-		dev_err(dev, "Unset support pen, use default\n");
-		pdata->enable_pen = ELAN_ENABLE_ACTIVE_PEN;
-	}
+	pdata->enable_hid_iic =
+		of_property_read_bool(np, "elan,enable-hid-iic");
+	pdata->enable_pen =
+		of_property_read_bool(np, "elan,enable-hid-pen");
 
 	ret = of_property_read_u32(np, "elan,pen-id",
 					&pdata->pen_id);
@@ -2509,26 +2494,9 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 		pdata->packet_size = ELAN_RECV_PACKET_SIZE;
 	}
 
-	ret = of_property_read_u32(np, "elan,swap-x-y",
-					&pdata->swap_x_y);
-	if (ret) {
-		dev_err(dev, "Unset x to y, use default\n");
-		pdata->swap_x_y = ELAN_SWAP_X_Y;
-	}
-
-	ret = of_property_read_u32(np, "elan,rotate-x",
-					&pdata->rotate_x);
-	if (ret) {
-		dev_err(dev, "Unset rotate x, use default\n");
-		pdata->rotate_x = ELAN_ROTATE_X;
-	}
-
-	ret = of_property_read_u32(np, "elan,rotate-y",
-					&pdata->rotate_y);
-	if (ret) {
-		dev_err(dev, "Unset rotate y, use default\n");
-		pdata->rotate_y = ELAN_ROTATE_Y;
-	}
+	pdata->swap_x_y = of_property_read_bool(np, "elan,swap-x-y");
+	pdata->rotate_x = of_property_read_bool(np, "elan,rotate-x");
+	pdata->rotate_y = of_property_read_bool(np, "elan,rotate-y");
 
 	ts->pdata->intr_gpio = of_get_named_gpio_flags(np,
 			"elan,irq-gpio", 0, NULL);
@@ -2555,9 +2523,8 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 			"[elan] pdata->abs_size_x = %d, pdata->abs_size_y = %d\n",
 			ts->pdata->abs_size_x, ts->pdata->abs_size_y);
 
-	dev_err(&ts->client->dev,
-			"[elan] pdata->finger_count = %d, pdata->enable_hid_iic = %d\n",
-			ts->pdata->finger_count, ts->pdata->enable_hid_iic);
+	dev_err(&ts->client->dev, "pdata->enable_hid_iic = %d\n",
+			ts->pdata->enable_hid_iic);
 
 	dev_err(&ts->client->dev, "[elan] pdata->enable_pen = %d\n",
 			ts->pdata->enable_pen);

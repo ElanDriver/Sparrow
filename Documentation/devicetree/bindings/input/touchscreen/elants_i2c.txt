@@ -15,19 +15,15 @@ Elan Ektf3xx series touch controller
 		- elan,lcm-size-y		: Lcm Y Resolution.
 		- elan,tp-size-x		: Elan panel X Resolution.
 		- elan,tp-size-y		: Elan panel Y Resolution.
-		- elan,finger-count		: Elan product could support point number.
-		- elan,enale-hid-iic	: Elan product support HID IIC protocol or not.
-		- elan,enable-hid-pen	: Elan product support active pen or not.
-		- elan,pen-id			: Active pen Id.
-		- elan,hand-id			: Elan product multi point id, 2 point id 0x5A,
+		- elan,pen-id			: Elan product support active pen Id, pen id 0x07
+		- elan,hand-id			: Elan product support IIC proctocol, 2 point id 0x5A,
 									5 point id 0x5D, 10 point id 0x62.
 		- elan,hid-hand-id		: Elan product support HID IIC protocol ,finger id 0x01.
 		- elan,packet-size		: Elan product multi point receive data size,
+									If Elan product support HID IIC protocol, receive 67byte.
+									If Elan product support IIC protocol
 									2 point receive 8byte, 5 point receive 18byte,
-									10 point receive.
-		- elan,swap-x-y			: Swap x y.
-		- elan,rotate-x			: Rotate x.
-		- elan,rotate-y			: Rotate y.
+									10 point receive 35byte.
 
 	Optional properties:
 
@@ -36,6 +32,11 @@ Elan Ektf3xx series touch controller
 		-vcc-i2c-supply			: Power source required to power up i2c bus.
 									Ektf3xx series can provide 1.8V from internal
 									LDO, add this properties base on hardware design.
+		- elan,swap-x-y			: Specify swap x y, default value set not.
+		- elan,rotate-x			: Specify Rotate x, default value set not.
+		- elan,rotate-y			: Specify Rotate y, default value set not.
+		- elan,enable-hid-iic	: Elan product support HID IIC protocol or not.
+		- elan,enable-hid-pen	: Elan product support active pen or not.
 
 	Example:
 		i2c@f9923000{
@@ -52,15 +53,9 @@ Elan Ektf3xx series touch controller
 				elan,lcm-size-y = <1280>;
 				elan,tp-size-x = <1473>;
 				elan,tp-size-y = <2368>;
-				elan,finger-count = <10>;
-				elan,enale-hid-iic = <0>;
-				elan,enable-hid-pen = <0>;
 				elan,pen-id = <0x07>;
 				elan,hand-id = <0x62>;
 				elan,hid-hand-id = <0x01>;
 				elan,packet-size = <35>;
-				elan,swap-x-y = <0>;
-				elan,rotate-x = <0>;
-				elan,rotate-y = <0>;
 			};
 		};
