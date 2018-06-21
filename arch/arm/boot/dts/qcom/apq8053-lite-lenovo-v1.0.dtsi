@@ -44,10 +44,10 @@
 		elan,lcm-size-y = <1280>;
 		elan,tp-size-x = <1473>;
 		elan,tp-size-y = <2368>;
+		elan,finger-count = <10>;
 		elan,pen-id = <0x07>;
 		elan,hand-id = <0x62>;
 		elan,hid-hand-id = <0x01>;
-		elan,packet-size = <35>;
 	};
 };
 

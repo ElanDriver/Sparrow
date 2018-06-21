@@ -54,6 +54,7 @@ struct elan_i2c_platform_data {
 	int intr_gpio;
 	int rst_gpio;
 	int elan_irq;
+	int finger_count;
 	bool enable_hid_iic;
 	bool enable_pen;
 	int lcm_size_x;
@@ -2461,6 +2462,13 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 		pdata->abs_size_y = ELAN_DEFAULT_Y;
 	}
 
+	ret = of_property_read_u32(np, "elan,finger-count",
+			&pdata->finger_count);
+	if (ret) {
+		dev_err(dev, "Unset finger count, use default\n");
+		pdata->finger_count = ELAN_DEFAULT_FINGER_COUNT;
+	}
+
 	pdata->enable_hid_iic =
 		of_property_read_bool(np, "elan,enable-hid-iic");
 	pdata->enable_pen =
@@ -2485,13 +2493,6 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 	if (ret) {
 		dev_err(dev, "Unset hid hand id, use default\n");
 		pdata->hid_hand_id = ELAN_HID_HAND_ID;
-	}
-
-	ret = of_property_read_u32(np, "elan,packet-size",
-					&pdata->packet_size);
-	if (ret) {
-		dev_err(dev, "Unset hid hand id, use default\n");
-		pdata->packet_size = ELAN_RECV_PACKET_SIZE;
 	}
 
 	pdata->swap_x_y = of_property_read_bool(np, "elan,swap-x-y");
@@ -2537,9 +2538,6 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 
 	dev_err(&ts->client->dev, "[elan] pdata->hid_hand_id = 0x%x\n",
 			ts->pdata->hid_hand_id);
-
-	dev_err(&ts->client->dev, "[elan] pdata->packet_size = %d\n",
-			ts->pdata->packet_size);
 
 	ts->pdata->elan_irq = gpio_to_irq(ts->pdata->intr_gpio);
 
@@ -2761,6 +2759,19 @@ static int elan_ts_probe(struct i2c_client *client,
 			"[elan] rst_gpio = %d, intr_gpio = %d\n",
 			ts->pdata->rst_gpio, ts->pdata->intr_gpio);
 #endif
+	if (ts->pdata->finger_count == 2)
+		ts->pdata->packet_size = 8;
+
+	if (ts->pdata->finger_count == 5)
+		ts->pdata->packet_size = 18;
+
+	if (ts->pdata->finger_count == 10) {
+		if (ts->pdata->enable_hid_iic)
+			ts->pdata->packet_size = 67;
+		else
+			ts->pdata->packet_size = 35;
+	}
+
 	dev_err(&client->dev, "[elan] power setting....\n");
 	err = elan_ts_power_init(ts, true);
 	if (err) {

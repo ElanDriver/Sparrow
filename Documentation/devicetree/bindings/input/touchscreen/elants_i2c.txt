@@ -19,11 +19,9 @@ Elan Ektf3xx series touch controller
 		- elan,hand-id			: Elan product support IIC proctocol, 2 point id 0x5A,
 									5 point id 0x5D, 10 point id 0x62.
 		- elan,hid-hand-id		: Elan product support HID IIC protocol ,finger id 0x01.
-		- elan,packet-size		: Elan product multi point receive data size,
-									If Elan product support HID IIC protocol, receive 67byte.
-									If Elan product support IIC protocol
-									2 point receive 8byte, 5 point receive 18byte,
-									10 point receive 35byte.
+		- elan,finger-count		: If Elan product support HID IIC protocol,only support 10 point,
+									If Elan product support IIC protocol, support 10 point,
+									5  point, 2 point.
 
 	Optional properties:
 
@@ -53,9 +51,9 @@ Elan Ektf3xx series touch controller
 				elan,lcm-size-y = <1280>;
 				elan,tp-size-x = <1473>;
 				elan,tp-size-y = <2368>;
+				elan,finger-count = <10>;
 				elan,pen-id = <0x07>;
 				elan,hand-id = <0x62>;
 				elan,hid-hand-id = <0x01>;
-				elan,packet-size = <35>;
 			};
 		};
