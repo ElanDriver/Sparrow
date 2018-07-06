@@ -16,13 +16,13 @@
 
 #define ELAN_LCM_X					800
 #define ELAN_LCM_Y					1280
-#define ELAN_DEFAULT_X				1473
-#define ELAN_DEFAULT_Y				2368
-#define ELAN_ACTIVE_PEN_ID			0x07
-#define ELAN_HAND_ID				0x62
-#define ELAN_HID_HAND_ID			0x01
-#define ELAN_BUF_SIZE				67
-#define ELAN_DEFAULT_FINGER_COUNT	10
+#define ELAN_DEFAULT_X					1473
+#define ELAN_DEFAULT_Y					2368
+#define ELAN_ACTIVE_PEN_ID				0x07
+#define ELAN_HAND_ID					0x62
+#define ELAN_HID_HAND_ID				0x01
+#define ELAN_BUF_SIZE					67
+#define ELAN_DEFAULT_FINGER_COUNT				10
 /****************************elan data info****************************/
 
 /*i2c info*/

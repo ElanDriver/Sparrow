@@ -2430,7 +2430,9 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 	int ret;
 	struct device_node *np = dev->of_node;
 	struct elan_ts_data *ts = private_ts;
-	int lcm_coords[2], tp_coords[2];
+	int coords_size = 0;
+	int coords[2] = {0};
+	struct property *prop;
 
 	dev_info(&ts->client->dev, "[elan] Get device tree property\n");
 
@@ -2442,26 +2444,45 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 	return rc;
 	}
 	 */
-	ret = of_property_read_u32(np, "elan,lcm-size",
-			lcm_coords);
-	if (ret) {
-		dev_err(dev, "Unset lcm-size, use default\n");
-		pdata->lcm_size_y = ELAN_LCM_X;
-		pdata->lcm_size_x = ELAN_LCM_X;
-	} else {
-		pdata->lcm_size_x = lcm_coords[0];
-		pdata->lcm_size_y = lcm_coords[1];
+
+	prop = of_find_property(np, "elan,lcm-size", NULL);
+	if (prop) {
+		coords_size = prop->length / sizeof(u32);
+		if(coords_size != 2)
+			dev_err(dev, "Invalid lcm coords size %d\n", coords_size);
 	}
 
-	ret = of_property_read_u32(np, "elan,tp-size",
-			tp_coords);
-	if (ret) {
+	ret = of_property_read_u32_array(np, "elan,lcm-size",
+			coords, coords_size);
+	if (ret != 0) {
+		dev_err(dev, "Unset lcm-size, use default\n");
+		pdata->lcm_size_y = ELAN_LCM_Y;
+		pdata->lcm_size_x = ELAN_LCM_X;
+	} else {
+		pdata->lcm_size_x = coords[0];
+		pdata->lcm_size_y = coords[1];
+		dev_err(dev, "coords[0] = %d, coords[1] = %d\n",
+				coords[0], coords[1]);
+	}
+
+	prop = of_find_property(np, "elan,tp-size", NULL);
+	if (prop) {
+		coords_size = prop->length / sizeof(u32);
+		if(coords_size != 2)
+			dev_err(dev, "Invalid tp coords size %d\n", coords_size);
+	}
+
+	ret = of_property_read_u32_array(np, "elan,tp-size",
+			coords, coords_size);
+	if (ret != 0) {
 		dev_err(dev, "Unset tp-size, use default\n");
 		pdata->abs_size_x = ELAN_DEFAULT_X;
-		pdata->abs_size_x = ELAM_DEFAULT_Y;
+		pdata->abs_size_y = ELAM_DEFAULT_Y;
 	} else {
-		pdata->abs_size_x = tp_coords[0];
-		pdata->abs_size_x = tp_coords[1];
+		pdata->abs_size_x = coords[0];
+		pdata->abs_size_y = coords[1];
+		dev_err(dev, "coords[0] = %d, coords[1] = %d\n",
+				coords[0], coords[1]);
 	}
 
 	ret = of_property_read_u32(np, "elan,finger-count",

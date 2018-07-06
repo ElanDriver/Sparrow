@@ -2,33 +2,32 @@ Elan Ektf3xx series touch controller
 
    Required properties:
 
-		- compatible					: Should be "elan,ektf"
-		- reg							   : I2C slave address of the device.
-		- interrupt-parent		: Parent of interrupt.
-		- interrupts					: Configuration of touch panel controller interrupt
-														GPIO.
-		- elan,irq-gpio			 : Interrupt gpio which is to provide interrupts to
-														host, same as "interrupts" node.It will also contain
-														active low or active high information
-		- elan,reset-gpio		 : Reset gpio to control the reset of chip.
-		- elan,lcm-size			 : Lcm X Resolution and Lcm Y Resolution.
-		- elan,tp-size			 : Elan panel X Resolution and Elan panel Y Resolution.
-		- elan,finger-count		 : If Elan product support HID IIC protocol,only support 10 point,
-									If Elan product support IIC protocol, support 10 point,
-									5  point, 2 point.
+		- compatible				: Should be "elan,ektf"
+		- reg				        : I2C slave address of the device.
+		- interrupt-parent			: Parent of interrupt.
+		- interrupts				: Configuration of touch panel controller interrupt GPIO.
+		- elan,irq-gpio				: Interrupt gpio which is to provide interrupts to
+										host, same as "interrupts" node.It will also contain
+										active low or active high information
+		- elan,reset-gpio			: Reset gpio to control the reset of chip.
+		- elan,lcm-size				: Lcm X Resolution and Lcm Y Resolution.
+		- elan,tp-size				: Elan panel X Resolution and Elan panel Y Resolution.
+		- elan,finger-count			: If Elan product support HID IIC protocol,only support 10 point,
+										If Elan product support IIC protocol, support 10 point,
+										5  point, 2 point.
 
 	Optional properties:
 
-		- vdd-supply			: Power supply needed to power up the device, when use
-									external regulator, do not add this property.
-		-vcc-i2c-supply			: Power source required to power up i2c bus.
-									Ektf3xx series can provide 1.8V from internal
-									LDO, add this properties base on hardware design.
-		- elan,swap-x-y			: Specify change x y, default value set not.
-		- elan,rotate-x			: Specify Rotate x, default value set not.
-		- elan,rotate-y			: Specify Rotate y, default value set not.
-		- elan,enable-hid-iic	: Elan product support HID IIC protocol or not.
-		- elan,enable-hid-pen	: Elan product support active pen or not.
+		- vdd-supply				: Power supply needed to power up the device, when use
+										external regulator, do not add this property.
+		-vcc-i2c-supply				: Power source required to power up i2c bus.
+										Ektf3xx series can provide 1.8V from internal
+										LDO, add this properties base on hardware design.
+		- elan,swap-x-y				: Specify change x y, default value set not.
+		- elan,rotate-x				: Specify Rotate x, default value set not.
+		- elan,rotate-y				: Specify Rotate y, default value set not.
+		- elan,enable-hid-iic		  : Elan product support HID IIC protocol or not.
+		- elan,enable-hid-pen		  : Elan product support active pen or not.
 
 	Example:
 		i2c@f9923000{
