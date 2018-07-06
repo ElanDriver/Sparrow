@@ -1,25 +1,19 @@
 Elan Ektf3xx series touch controller
 
-	Required properties:
+   Required properties:
 
-		- compatible			: Should be "elan,ektf"
-		- reg					: I2C slave address of the device.
+		- compatible					: Should be "elan,ektf"
+		- reg							   : I2C slave address of the device.
 		- interrupt-parent		: Parent of interrupt.
-		- interrupts			: Configuration of touch panel controller interrupt
-									GPIO.
-		- elan,irq-gpio			: Interrupt gpio which is to provide interrupts to
-									host, same as "interrupts" node.It will also contain
-									active low or active high information
-		- elan,reset-gpio		: Reset gpio to control the reset of chip.
-		- elan,lcm-size-x		: Lcm X Resolution.
-		- elan,lcm-size-y		: Lcm Y Resolution.
-		- elan,tp-size-x		: Elan panel X Resolution.
-		- elan,tp-size-y		: Elan panel Y Resolution.
-		- elan,pen-id			: Elan product support active pen Id, pen id 0x07
-		- elan,hand-id			: Elan product support IIC proctocol, 2 point id 0x5A,
-									5 point id 0x5D, 10 point id 0x62.
-		- elan,hid-hand-id		: Elan product support HID IIC protocol ,finger id 0x01.
-		- elan,finger-count		: If Elan product support HID IIC protocol,only support 10 point,
+		- interrupts					: Configuration of touch panel controller interrupt
+														GPIO.
+		- elan,irq-gpio			 : Interrupt gpio which is to provide interrupts to
+														host, same as "interrupts" node.It will also contain
+														active low or active high information
+		- elan,reset-gpio		 : Reset gpio to control the reset of chip.
+		- elan,lcm-size			 : Lcm X Resolution and Lcm Y Resolution.
+		- elan,tp-size			 : Elan panel X Resolution and Elan panel Y Resolution.
+		- elan,finger-count		 : If Elan product support HID IIC protocol,only support 10 point,
 									If Elan product support IIC protocol, support 10 point,
 									5  point, 2 point.
 
@@ -30,7 +24,7 @@ Elan Ektf3xx series touch controller
 		-vcc-i2c-supply			: Power source required to power up i2c bus.
 									Ektf3xx series can provide 1.8V from internal
 									LDO, add this properties base on hardware design.
-		- elan,swap-x-y			: Specify swap x y, default value set not.
+		- elan,swap-x-y			: Specify change x y, default value set not.
 		- elan,rotate-x			: Specify Rotate x, default value set not.
 		- elan,rotate-y			: Specify Rotate y, default value set not.
 		- elan,enable-hid-iic	: Elan product support HID IIC protocol or not.
@@ -47,13 +41,8 @@ Elan Ektf3xx series touch controller
 				elan,irq-gpio = <&msmgpio 1 0x00>;
 				interrupt-parent = <&msmgpio>;
 				interrupts = <1 0x2>;
-				elan,lcm-size-x = <800>;
-				elan,lcm-size-y = <1280>;
-				elan,tp-size-x = <1473>;
-				elan,tp-size-y = <2368>;
+				elan,lcm-size = <800 1280>;
+				elan,tp-size = <1473 2368>;
 				elan,finger-count = <10>;
-				elan,pen-id = <0x07>;
-				elan,hand-id = <0x62>;
-				elan,hid-hand-id = <0x01>;
 			};
 		};

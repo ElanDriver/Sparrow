@@ -119,6 +119,13 @@ static struct elan_ts_data *private_ts;
 #define FT_I2C_VTG_MIN_UV	1800000
 #define FT_I2C_VTG_MAX_UV	1800000
 
+/*************************have button macro switch*********************/
+static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
+
+#if defined IAP_PORTION
+	static uint8_t *file_fw_data_out;
+#endif
+
 /*galobal function*/
 static int __hello_packet_handler(struct i2c_client *client);
 static int __fw_packet_handler(struct i2c_client *client);
@@ -2423,6 +2430,7 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 	int ret;
 	struct device_node *np = dev->of_node;
 	struct elan_ts_data *ts = private_ts;
+	int lcm_coords[2], tp_coords[2];
 
 	dev_info(&ts->client->dev, "[elan] Get device tree property\n");
 
@@ -2434,32 +2442,26 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 	return rc;
 	}
 	 */
-	ret = of_property_read_u32(np, "elan,lcm-size-y",
-				   &pdata->lcm_size_y);
+	ret = of_property_read_u32(np, "elan,lcm-size",
+			lcm_coords);
 	if (ret) {
-		dev_err(dev, "Unset lcm-size-y, use default\n");
-		pdata->lcm_size_y = ELAN_LCM_Y;
-	}
-
-	ret = of_property_read_u32(np, "elan,lcm-size-x",
-				   &pdata->lcm_size_x);
-	if (ret) {
-		dev_err(dev, "Unset lcm-size-x, use default\n");
+		dev_err(dev, "Unset lcm-size, use default\n");
+		pdata->lcm_size_y = ELAN_LCM_X;
 		pdata->lcm_size_x = ELAN_LCM_X;
+	} else {
+		pdata->lcm_size_x = lcm_coords[0];
+		pdata->lcm_size_y = lcm_coords[1];
 	}
 
-	ret = of_property_read_u32(np, "elan,tp-size-x",
-				   &pdata->abs_size_x);
+	ret = of_property_read_u32(np, "elan,tp-size",
+			tp_coords);
 	if (ret) {
-		dev_err(dev, "Unset tp-size-x, use default\n");
+		dev_err(dev, "Unset tp-size, use default\n");
 		pdata->abs_size_x = ELAN_DEFAULT_X;
-	}
-
-	ret = of_property_read_u32(np, "elan,tp-size-y",
-			&pdata->abs_size_y);
-	if (ret) {
-		dev_err(dev, "Unset tp-size-y, use default\n");
-		pdata->abs_size_y = ELAN_DEFAULT_Y;
+		pdata->abs_size_x = ELAM_DEFAULT_Y;
+	} else {
+		pdata->abs_size_x = tp_coords[0];
+		pdata->abs_size_x = tp_coords[1];
 	}
 
 	ret = of_property_read_u32(np, "elan,finger-count",
@@ -2474,26 +2476,22 @@ int elan_ts_parse_dt(struct device *dev, struct elan_i2c_platform_data *pdata)
 	pdata->enable_pen =
 		of_property_read_bool(np, "elan,enable-hid-pen");
 
-	ret = of_property_read_u32(np, "elan,pen-id",
-					&pdata->pen_id);
-	if (ret) {
-		dev_err(dev, "Unset pen id, use default\n");
-		pdata->pen_id = ELAN_ACTIVE_PEN_ID;
-	}
+	pdata->pen_id = ELAN_ACTIVE_PEN_ID;
+	pdata->hid_hand_id = ELAN_HID_HAND_ID;
 
-	ret = of_property_read_u32(np, "elan,hand-id",
-					&pdata->hand_id);
-	if (ret) {
-		dev_err(dev, "Unset pen id, use default\n");
-		pdata->hand_id = ELAN_HAND_ID;
-	}
-
-	ret = of_property_read_u32(np, "elan,hid-hand-id",
-					&pdata->hid_hand_id);
-	if (ret) {
-		dev_err(dev, "Unset hid hand id, use default\n");
-		pdata->hid_hand_id = ELAN_HID_HAND_ID;
-	}
+	if (pdata->enable_hid_iic == 0) {
+		if (pdata->finger_count == 2) {
+			pdata->hand_id = 0x5A;
+			pdata->packet_size = 8;
+		} else if (pdata->finger_count == 5) {
+			pdata->hand_id = 0x5D;
+			pdata->packet_size = 18;
+		} else if (pdata->finger_count == 10) {
+			pdata->hand_id = 0x62;
+			pdata->packet_size = 35;
+		}
+	} else
+		pdata->packet_size = 67;
 
 	pdata->swap_x_y = of_property_read_bool(np, "elan,swap-x-y");
 	pdata->rotate_x = of_property_read_bool(np, "elan,rotate-x");
@@ -2759,19 +2757,6 @@ static int elan_ts_probe(struct i2c_client *client,
 			"[elan] rst_gpio = %d, intr_gpio = %d\n",
 			ts->pdata->rst_gpio, ts->pdata->intr_gpio);
 #endif
-	if (ts->pdata->finger_count == 2)
-		ts->pdata->packet_size = 8;
-
-	if (ts->pdata->finger_count == 5)
-		ts->pdata->packet_size = 18;
-
-	if (ts->pdata->finger_count == 10) {
-		if (ts->pdata->enable_hid_iic)
-			ts->pdata->packet_size = 67;
-		else
-			ts->pdata->packet_size = 35;
-	}
-
 	dev_err(&client->dev, "[elan] power setting....\n");
 	err = elan_ts_power_init(ts, true);
 	if (err) {
