@@ -93,6 +93,8 @@
 
 #define ELAN_POWERON_DELAY_USEC	500
 #define ELAN_RESET_DELAY_MSEC	20
+
+/* define print buf size*/
 #define ELAN_PRINT_SIZE			1024
 
 enum elants_state {

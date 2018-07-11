@@ -10,7 +10,8 @@ Elan Ektf3xx series touch controller
 										host, same as "interrupts" node.It will also contain
 										active low or active high information
 		- elan,reset-gpio			: Reset gpio to control the reset of chip.
-	Optional properties:
+	
+  Optional properties:
 
 		- vdd-supply				: Power supply needed to power up the device, when use
 										external regulator, do not add this property.
