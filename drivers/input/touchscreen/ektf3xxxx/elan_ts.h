@@ -5,6 +5,9 @@
  * Copyright (C) 2014 Elan Microelectronics Corporation.
  * Scott Liu <scott.liu@emc.com.tw>
  *
+ */
+
+/*
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -13,16 +16,22 @@
 #ifndef _LINUX_ELAN_TS_H
 #define _LINUX_ELAN_TS_H
 
-
-#define ELAN_LCM_X					800
-#define ELAN_LCM_Y					1280
-#define ELAN_DEFAULT_X					1473
-#define ELAN_DEFAULT_Y					2368
-#define ELAN_ACTIVE_PEN_ID				0x07
-#define ELAN_HAND_ID					0x62
-#define ELAN_HID_HAND_ID				0x01
-#define ELAN_BUF_SIZE					67
-#define ELAN_DEFAULT_FINGER_COUNT				10
+/****************************customer info****************************/
+#define ELAN_LCM_X	800
+#define ELAN_LCM_Y	1280
+#define ELAN_DEFAULT_X   1473
+#define ELAN_DEFAULT_Y   2368
+#define ELAN_DEFAULT_FINGER_COUNT 10
+#define ELAN_ENABLE_HID_IIC	0
+#define ELAN_ENABLE_ACTIVE_PEN	0
+#define ELAN_ACTIVE_PEN_ID	0x07
+#define ELAN_HAND_ID	0x62
+#define ELAN_HID_HAND_ID	0x01
+#define ELAN_RECV_PACKET_SIZE	35
+#define ELAN_BUF_SIZE	67
+#define ELAN_SWAP_X_Y	0
+#define ELAN_ROTATE_X	0
+#define ELAN_ROTATE_Y	0
 /****************************elan data info****************************/
 
 /*i2c info*/
@@ -34,10 +43,7 @@
 #define USE_THREAD
 #define IAPRESTART 5
 
-/*
- * Set bit3 to switch between
- * sleep mode and normal mode
-*/
+/*sleep  mode*/
 #define PWR_STATE_DEEP_SLEEP	0
 #define PWR_STATE_NORMAL		1
 #define PWR_STATE_MASK		BIT(3)
@@ -50,16 +56,26 @@
 #define RAM_PKT				0xcc
 #define BUFF_PKT			0x63
 
+/*elan IC series(only choose one)*/
+/*#define ELAN_2K_XX*/
 #define ELAN_3K_XX
+/*#define ELAN_RAM_XX*/
+
+/**********************fingers number macro switch**********************/
+/*#define ELAN_BUFFER_MODE*/
+/*#define ELAN_ICS_SLOT_REPORT*/
 
 /***********************debug info macro switch***********************/
 #define PRINT_INT_INFO
 #define DRV_VERSION "1.0.1"
+/*************************have button macro switch*********************/
+static const int key_value[] = {KEY_MENU, KEY_HOME, KEY_BACK};
+
 
 #define  ELAN_KEY_BACK    0x02
-#define  ELAN_KEY_HOME    0x03
 #define  ELAN_KEY_MENU    0x01
 #define  ELAN_KEY_NONE    0x00
+#define  ELAN_KEY_HOME    0x03
 
 /*************************dev file macro switch********************/
 #define ELAN_IAP_DEV
@@ -95,17 +111,30 @@
 
 
 /**********************update firmware macro switch*******************/
+/*#define USE_128_MODE*/
 #define IAP_PORTION
 
-enum {
-	PageSize = 132,
-	ACK_Fail = 0x00,
-	ACK_OK = 0xAA,
-	ACK_REWRITE = 0x55,
-	E_FD = -1,
-};
+#if defined IAP_PORTION || defined ELAN_RAM_XX
+	/*The newest firmware, if update must be changed here*/
+/*	static uint8_t file_fw_data[] = {
+		#include "fw_data.i"
+	};
+*/
+	static uint8_t *file_fw_data_out;
+#endif
+	enum {
+		PageSize = 132,
+		ACK_Fail = 0x00,
+		ACK_OK = 0xAA,
+		ACK_REWRITE = 0x55,
+		E_FD = -1,
+	};
 
 /**********************elan attr file macro switch*******************/
-#define SYS_DEFAULT_ATTR
+/*#define SYS_ATTR_FILE*/
+#ifdef SYS_ATTR_FILE
+	static struct kobject *android_touch_kobj;
+#endif
 #endif /* _LINUX_ELAN_TS_H */
+#define SYS_DEFAULT_ATTR
 

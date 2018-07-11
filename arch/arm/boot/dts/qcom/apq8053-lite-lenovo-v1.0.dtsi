@@ -33,16 +33,14 @@
 		report_type = <1>;
 	};
 	elan_ktf@10 {
-		compatible = "elan,ektf";
+		compatible = "elan,ekth3500";
 		reg = <0x10>;
 		vdd-supply = <&pm8953_l10>;
-		vcc_i2c-supply = <&pm8953_l6>;
-		elan,reset-gpio = <&tlmm 64 0x00>;
+		vccio-supply = <&pm8953_l6>;
+		interrupt-parent = <&tlmm>;>
+		reset-gpio = <&tlmm 64 GPIO_ACTIVE_LOW>;
 		elan,irq-gpio = <&tlmm 65 0x2008>;
 		interrupts = <65 0x2>;
-		elan,lcm-size = <800 1280>;
-		elan,tp-size  = <1473 2368>;
-		elan,finger-count = <10>;
 	};
 };
 
